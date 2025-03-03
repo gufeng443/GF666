@@ -102,13 +102,6 @@
                 } else {
                     result += '\n'; // 链接数据不足，留空
                 }
-
-                if (linkIndex >= links.length && i < quantity - 1) {
-                    const continueGenerating = confirm('链接数据不足，是否继续生成？');
-                    if (!continueGenerating) {
-                        break;
-                    }
-                }
             }
 
             generatedData = result; // 保存生成的数据
