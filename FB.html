@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自动分料子程序</title>
+    <!-- 引入 Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px 10px 0 0;
+            padding: 15px;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            font-weight: bold;
+            color: #333;
+        }
+        .form-control {
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .text-muted {
+            color: #6c757d !important;
+        }
+        .output {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4" style="color: #007bff;">自动分料子程序</h1>
+
+        <!-- 密码输入 -->
+        <div class="card">
+            <div class="card-header">密码验证</div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="password">密码:</label>
+                    <input type="password" id="password" class="form-control" placeholder="输入密码">
+                </div>
+                <button class="btn btn-primary w-100" onclick="checkPassword()">进入</button>
+            </div>
+        </div>
+
+        <!-- 主界面 -->
+        <div id="main" class="mt-4" style="display:none;">
+            <div class="card">
+                <div class="card-header">分料子设置</div>
+                <div class="card-body">
+                    <!-- 料子名称 -->
+                    <div class="form-group">
+                        <label for="materialName">料子名称:</label>
+                        <input type="text" id="materialName" class="form-control" placeholder="保存文件是的文件名前缀，例如：Jak-A">
+                    </div>
+
+                    <!-- 料子号码 -->
+                    <div class="form-group">
+                        <label for="material">料子号码:</label>
+                        <textarea id="material" class="form-control" placeholder="每行一个料子号码，将料子粘贴进来" rows="4"></textarea>
+                        <div id="materialCount" class="text-muted mt-2"></div>
+                    </div>
+
+                    <!-- 分包大小 -->
+                    <div class="form-group">
+                        <label for="batchSize">分包大小:</label>
+                        <input type="number" id="batchSize" class="form-control" placeholder="例如：400">
+                    </div>
+
+                    <!-- 管理员号码 -->
+                    <div class="form-group">
+                        <label for="admin">管理员号码:</label>
+                        <textarea id="admin" class="form-control" placeholder="每行一个管理员号码" rows="4"></textarea>
+                        <div id="adminCount" class="text-muted mt-2"></div>
+                    </div>
+
+                    <!-- 水军号码 -->
+                    <div class="form-group">
+                        <label for="waterArmy">水军号码:</label>
+                        <textarea id="waterArmy" class="form-control" placeholder="每行一个水军号码" rows="4"></textarea>
+                        <div id="waterArmyCount" class="text-muted mt-2"></div>
+                    </div>
+
+                    <!-- 群名称 -->
+                    <div class="form-group">
+                        <label for="groupName">社群群名称:</label>
+                        <input type="text" id="groupName" class="form-control" placeholder="例如：Goldman Trading">
+                    </div>
+
+                    <!-- 起始编号 -->
+                    <div class="form-group">
+                        <label for="startNumber">起始编号:</label>
+                        <input type="number" id="startNumber" class="form-control" placeholder="例如：41">
+                    </div>
+
+                    <!-- 群描述 -->
+                    <div class="form-group">
+                        <label for="groupDesc">社群描述:</label>
+                        <textarea id="groupDesc" class="form-control" placeholder="例如：欢迎加入..." rows="4"></textarea>
+                    </div>
+
+                    <!-- 社群链接 -->
+                    <div class="form-group">
+                        <label for="groupLinks">社群链接:</label>
+                        <textarea id="groupLinks" class="form-control" placeholder="每行一个社群链接" rows="4"></textarea>
+                    </div>
+
+                    <!-- 开始执行按钮 -->
+                    <button class="btn btn-primary w-100" onclick="execute()">开始执行</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function checkPassword() {
+            fetch('https://gufeng443.github.io/GF666/password.txt')
+                .then(response => response.text())
+                .then(data => {
+                    if (document.getElementById('password').value.trim() === data.trim()) {
+                        document.getElementById('main').style.display = 'block';
+                    } else {
+                        alert('密码错误');
+                    }
+                });
+        }
+
+        function execute() {
+            const materialName = document.getElementById('materialName').value.trim();
+            const material = document.getElementById('material').value.split('\n').filter(line => line.trim() !== '');
+            const batchSize = parseInt(document.getElementById('batchSize').value);
+            const admin = document.getElementById('admin').value.split('\n').filter(line => line.trim() !== '');
+            const waterArmy = document.getElementById('waterArmy').value.split('\n').filter(line => line.trim() !== '');
+            const groupName = document.getElementById('groupName').value;
+            const startNumber = parseInt(document.getElementById('startNumber').value);
+            const groupDesc = document.getElementById('groupDesc').value;
+            const groupLinks = document.getElementById('groupLinks').value.split('\n')
+                .filter(line => line.trim() !== '')
+                .map(link => link.replace(/^\d+\./, '').trim()); // 清除链接前的非链接信息
+
+            let currentNumber = startNumber;
+            let linkIndex = 0; // 用于跟踪已分配的社群链接
+
+            for (let i = 0; i < material.length; i += batchSize) {
+                const batch = material.slice(i, i + batchSize);
+                let fileContent = `群名称加社群链接\n\n`;
+
+                // 每100个料子数据分配一个编号
+                const startBatchNumber = currentNumber;
+                const endBatchNumber = currentNumber + Math.ceil(batch.length / 400) - 1;
+
+                for (let j = 0; j < Math.ceil(batch.length / 400); j++) {
+                    const link = linkIndex < groupLinks.length ? groupLinks[linkIndex] : ''; // 如果链接不足，则留空
+                    fileContent += `${groupName} ${currentNumber + j}-\n${link}\n`;
+
+                    // 如果还有链接未分配，则分配下一个链接
+                    if (linkIndex < groupLinks.length) {
+                        linkIndex++;
+                    }
+                }
+                fileContent += `\n群描述\n\n${groupDesc}\n\n`;
+                fileContent += `管理员\n\n${admin.join('\n')}\n\n`;
+                fileContent += `水军\n\n${waterArmy.join('\n')}\n\n`;
+                fileContent += `料子\n\n${batch.join('\n')}\n\n`;
+
+                // 保存为TXT文件
+                const fileName = `${materialName}-${startBatchNumber}-${endBatchNumber}.txt`;
+                saveFile(fileName, fileContent);
+
+                // 更新当前编号
+                currentNumber += Math.ceil(batch.length / 400);
+            }
+        }
+
+        function saveFile(fileName, content) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('material').addEventListener('input', function() {
+            const lines = this.value.split('\n').filter(line => line.trim() !== '');
+            document.getElementById('materialCount').textContent = `共 ${lines.length} 行`;
+        });
+
+        document.getElementById('admin').addEventListener('input', function() {
+            const lines = this.value.split('\n').filter(line => line.trim() !== '');
+            document.getElementById('adminCount').textContent = `共 ${lines.length} 个管理员`;
+        });
+
+        document.getElementById('waterArmy').addEventListener('input', function() {
+            const lines = this.value.split('\n').filter(line => line.trim() !== '');
+            document.getElementById('waterArmyCount').textContent = `共 ${lines.length} 个水军`;
+        });
+    </script>
+</body>
+</html>
