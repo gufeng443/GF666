@@ -184,6 +184,13 @@
                 .filter(line => line.trim() !== '')
                 .map(link => link.replace(/^\d+\./, '').trim()); // 清除链接前的非链接信息
 
+
+            const links = linksInput.map(link => {
+                const urlPattern = /https?:\/\/[^\s]+/;
+                const match = link.match(urlPattern);
+                return match ? match[0] : '';
+            }).filter(link => link !== ''); // 过滤掉空值
+
             let currentNumber = startNumber;
             let linkIndex = 0; // 用于跟踪已分配的社群链接
 
@@ -191,13 +198,14 @@
                 const batch = material.slice(i, i + batchSize);
                 let fileContent = `群名称加社群链接\n\n`;
 
+
                 // 每100个料子数据分配一个编号
                 const startBatchNumber = currentNumber;
                 const endBatchNumber = currentNumber + Math.ceil(batch.length / 400) - 1;
 
                 for (let j = 0; j < Math.ceil(batch.length / 400); j++) {
                     const link = linkIndex < groupLinks.length ? groupLinks[linkIndex] : ''; // 如果链接不足，则留空
-                    fileContent += `${groupName} ${currentNumber + j}-\n${link}\n`;
+                    fileContent += `${groupName} ${currentNumber + j}\n${link}\n`;
 
                     // 如果还有链接未分配，则分配下一个链接
                     if (linkIndex < groupLinks.length) {
