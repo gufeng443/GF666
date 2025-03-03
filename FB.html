@@ -174,28 +174,42 @@
             const groupDesc = document.getElementById('groupDesc').value;
             const groupLinks = document.getElementById('groupLinks').value.split('\n')
                 .filter(line => line.trim() !== '')
-                .map(link => link.replace(/^\d+\./, '').trim()); // 清除链接前的非链接信息
+                .map(link => {
+                    // 提取链接数据，过滤掉 http:// 或 https:// 前的其他数据
+                    const match = link.match(/https?:\/\/\S+/);
+                    return match ? match[0] : '';
+                })
+                .filter(link => link.trim() !== ''); // 过滤掉空链接
 
             let currentNumber = startNumber;
             let linkIndex = 0; // 用于跟踪已分配的社群链接
 
             for (let i = 0; i < material.length; i += batchSize) {
                 const batch = material.slice(i, i + batchSize);
-                let fileContent = `群名称加社群链接\n\n`;
+                let fileContent = `料子名称加社群链接\n\n`;
 
                 // 每400个料子数据分配一个编号
                 const startBatchNumber = currentNumber;
                 const endBatchNumber = currentNumber + Math.ceil(batch.length / 400) - 1;
 
+                // 生成料子名称加社群链接
                 for (let j = 0; j < Math.ceil(batch.length / 400); j++) {
                     const link = linkIndex < groupLinks.length ? groupLinks[linkIndex] : ''; // 如果链接不足，则留空
-                    fileContent += `${groupName} ${currentNumber + j}\n${link}\n`; // 去掉编号后的 - 符号
+                    fileContent += `${materialName} ${currentNumber + j}-\n${link}\n`;
 
                     // 如果还有链接未分配，则分配下一个链接
                     if (linkIndex < groupLinks.length) {
                         linkIndex++;
                     }
                 }
+
+                // 生成社群名称
+                fileContent += `\n社群名称：\n`;
+                for (let j = startBatchNumber; j <= endBatchNumber; j++) {
+                    fileContent += `${groupName} ${j}\n`;
+                }
+
+                // 群描述、管理员、水军和料子数据
                 fileContent += `\n群描述\n\n${groupDesc}\n\n`;
                 fileContent += `管理员\n\n${admin.join('\n')}\n\n`;
                 fileContent += `水军\n\n${waterArmy.join('\n')}\n\n`;
