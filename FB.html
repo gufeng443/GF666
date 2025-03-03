@@ -61,14 +61,6 @@
         .text-muted {
             color: #6c757d !important;
         }
-        .output {
-            margin-top: 20px;
-            white-space: pre-wrap;
-            background-color: #fff;
-            padding: 15px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-        }
     </style>
 </head>
 <body>
@@ -95,13 +87,13 @@
                     <!-- 料子名称 -->
                     <div class="form-group">
                         <label for="materialName">料子名称:</label>
-                        <input type="text" id="materialName" class="form-control" placeholder="保存文件是的文件名前缀，例如：Jak-A">
+                        <input type="text" id="materialName" class="form-control" placeholder="例如：AAC">
                     </div>
 
                     <!-- 料子号码 -->
                     <div class="form-group">
                         <label for="material">料子号码:</label>
-                        <textarea id="material" class="form-control" placeholder="每行一个料子号码，将料子粘贴进来" rows="4"></textarea>
+                        <textarea id="material" class="form-control" placeholder="每行一个料子号码" rows="4"></textarea>
                         <div id="materialCount" class="text-muted mt-2"></div>
                     </div>
 
@@ -127,7 +119,7 @@
 
                     <!-- 群名称 -->
                     <div class="form-group">
-                        <label for="groupName">社群群名称:</label>
+                        <label for="groupName">群名称:</label>
                         <input type="text" id="groupName" class="form-control" placeholder="例如：Goldman Trading">
                     </div>
 
@@ -139,7 +131,7 @@
 
                     <!-- 群描述 -->
                     <div class="form-group">
-                        <label for="groupDesc">社群描述:</label>
+                        <label for="groupDesc">群描述:</label>
                         <textarea id="groupDesc" class="form-control" placeholder="例如：欢迎加入..." rows="4"></textarea>
                     </div>
 
@@ -184,13 +176,6 @@
                 .filter(line => line.trim() !== '')
                 .map(link => link.replace(/^\d+\./, '').trim()); // 清除链接前的非链接信息
 
-
-            const links = linksInput.map(link => {
-                const urlPattern = /https?:\/\/[^\s]+/;
-                const match = link.match(urlPattern);
-                return match ? match[0] : '';
-            }).filter(link => link !== ''); // 过滤掉空值
-
             let currentNumber = startNumber;
             let linkIndex = 0; // 用于跟踪已分配的社群链接
 
@@ -198,14 +183,13 @@
                 const batch = material.slice(i, i + batchSize);
                 let fileContent = `群名称加社群链接\n\n`;
 
-
-                // 每100个料子数据分配一个编号
+                // 每400个料子数据分配一个编号
                 const startBatchNumber = currentNumber;
                 const endBatchNumber = currentNumber + Math.ceil(batch.length / 400) - 1;
 
                 for (let j = 0; j < Math.ceil(batch.length / 400); j++) {
                     const link = linkIndex < groupLinks.length ? groupLinks[linkIndex] : ''; // 如果链接不足，则留空
-                    fileContent += `${groupName} ${currentNumber + j}\n${link}\n`;
+                    fileContent += `${groupName} ${currentNumber + j}\n${link}\n`; // 去掉编号后的 - 符号
 
                     // 如果还有链接未分配，则分配下一个链接
                     if (linkIndex < groupLinks.length) {
