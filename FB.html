@@ -61,26 +61,44 @@
         .text-muted {
             color: #6c757d !important;
         }
+        .community-options {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .community-options button {
+            flex: 1;
+            margin: 0 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center mb-4" style="color: #007bff;">自动分料子程序</h1>
-
-        <!-- 密码输入 -->
-        <div class="card">
-            <div class="card-header">密码验证</div>
-            <div class="card-body">
-                <div class="form-group">
-                    <label for="password">密码:</label>
-                    <input type="password" id="password" class="form-control" placeholder="输入密码">
+        <!-- 密码验证界面 -->
+        <div id="passwordSection">
+            <h1 class="text-center mb-4" style="color: #007bff;">自动分料子程序</h1>
+            <div class="card">
+                <div class="card-header">密码验证</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="password">密码:</label>
+                        <input type="password" id="password" class="form-control" placeholder="输入密码">
+                    </div>
+                    <button class="btn btn-primary w-100" onclick="checkPassword()">进入</button>
                 </div>
-                <button class="btn btn-primary w-100" onclick="checkPassword()">进入</button>
             </div>
         </div>
 
         <!-- 主界面 -->
         <div id="main" class="mt-4" style="display:none;">
+            <h1 class="text-center mb-4" style="color: #007bff;">自动分料子程序</h1>
+            <!-- 社群规模选项 -->
+            <div class="community-options">
+                <button class="btn btn-outline-primary" onclick="setCommunitySize(400)">400人社群</button>
+                <button class="btn btn-outline-primary" onclick="setCommunitySize(500)">500人社群</button>
+                <button class="btn btn-outline-primary" onclick="setCommunitySize(1000)">1000人社群</button>
+            </div>
+
             <div class="card">
                 <div class="card-header">分料子设置</div>
                 <div class="card-body">
@@ -151,16 +169,24 @@
     <!-- 引入 Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let communitySize = 400; // 默认社群规模为 400 人
+
         function checkPassword() {
             fetch('https://gufeng443.github.io/GF666/password.txt')
                 .then(response => response.text())
                 .then(data => {
                     if (document.getElementById('password').value.trim() === data.trim()) {
-                        document.getElementById('main').style.display = 'block';
+                        document.getElementById('passwordSection').style.display = 'none'; // 隐藏密码验证界面
+                        document.getElementById('main').style.display = 'block'; // 显示主界面
                     } else {
                         alert('密码错误');
                     }
                 });
+        }
+
+        function setCommunitySize(size) {
+            communitySize = size; // 设置社群规模
+            alert(`已选择 ${size} 人社群`);
         }
 
         function execute() {
@@ -188,14 +214,14 @@
                 const batch = material.slice(i, i + batchSize);
                 let fileContent = `料子名称加社群链接\n\n`;
 
-                // 每400个料子数据分配一个编号
+                // 根据社群规模分配编号
                 const startBatchNumber = currentNumber;
-                const endBatchNumber = currentNumber + Math.ceil(batch.length / 400) - 1;
+                const endBatchNumber = currentNumber + Math.ceil(batch.length / communitySize) - 1;
 
                 // 生成料子名称加社群链接
-                for (let j = 0; j < Math.ceil(batch.length / 400); j++) {
+                for (let j = 0; j < Math.ceil(batch.length / communitySize); j++) {
                     const link = linkIndex < groupLinks.length ? groupLinks[linkIndex] : ''; // 如果链接不足，则留空
-                    fileContent += `${materialName} ${currentNumber + j}-\n${link}\n`;
+                    fileContent += `${materialName} ${currentNumber + j}\n${link}\n`;
 
                     // 如果还有链接未分配，则分配下一个链接
                     if (linkIndex < groupLinks.length) {
@@ -220,7 +246,7 @@
                 saveFile(fileName, fileContent);
 
                 // 更新当前编号
-                currentNumber += Math.ceil(batch.length / 400);
+                currentNumber += Math.ceil(batch.length / communitySize);
             }
         }
 
