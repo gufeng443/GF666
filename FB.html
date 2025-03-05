@@ -267,7 +267,7 @@
                 // 生成料子名称加社群链接
                 for (let j = 0; j < Math.ceil(batch.length / communitySize); j++) {
                     const link = linkIndex < groupLinks.length ? groupLinks[linkIndex] : ''; // 如果链接不足，则留空
-                    fileContent += `${materialName} ${currentNumber + j}\n${link}\n`;
+                    fileContent += `${materialName} ${currentNumber + j}-\n${link}\n`;
 
                     // 如果还有链接未分配，则分配下一个链接
                     if (linkIndex < groupLinks.length) {
