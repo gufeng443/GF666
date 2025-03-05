@@ -70,6 +70,17 @@
             flex: 1;
             margin: 0 5px;
         }
+        .selected {
+            background-color: #007bff !important;
+            color: white !important;
+        }
+        .selected-info {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
     </style>
 </head>
 <body>
@@ -92,11 +103,14 @@
         <!-- 主界面 -->
         <div id="main" class="mt-4" style="display:none;">
             <h1 class="text-center mb-4" style="color: #007bff;">自动分料子程序</h1>
+            <!-- 当前选择的社群规模提示 -->
+            <div id="selectedInfo" class="selected-info">当前选择：400人社群</div>
+
             <!-- 社群规模选项 -->
             <div class="community-options">
-                <button class="btn btn-outline-primary" onclick="setCommunitySize(400)">400人社群</button>
-                <button class="btn btn-outline-primary" onclick="setCommunitySize(500)">500人社群</button>
-                <button class="btn btn-outline-primary" onclick="setCommunitySize(1000)">1000人社群</button>
+                <button id="btn400" class="btn btn-outline-primary selected" onclick="setCommunitySize(400)">400人社群</button>
+                <button id="btn500" class="btn btn-outline-primary" onclick="setCommunitySize(500)">500人社群</button>
+                <button id="btn1000" class="btn btn-outline-primary" onclick="setCommunitySize(1000)">1000人社群</button>
             </div>
 
             <div class="card">
@@ -186,7 +200,15 @@
 
         function setCommunitySize(size) {
             communitySize = size; // 设置社群规模
-            alert(`已选择 ${size} 人社群`);
+
+            // 更新按钮样式
+            document.querySelectorAll('.community-options button').forEach(button => {
+                button.classList.remove('selected');
+            });
+            document.getElementById(`btn${size}`).classList.add('selected');
+
+            // 更新提示信息
+            document.getElementById('selectedInfo').textContent = `当前选择：${size}人社群`;
         }
 
         function execute() {
