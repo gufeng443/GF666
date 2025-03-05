@@ -10,10 +10,14 @@
         body {
             background-color: #f8f9fa;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
         .container {
             max-width: 800px;
             margin: 0 auto;
+            flex: 1;
         }
         .card {
             border: none;
@@ -81,6 +85,20 @@
             font-weight: bold;
             color: #007bff;
         }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #ddd;
+        }
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -110,6 +128,7 @@
             <div class="community-options">
                 <button id="btn400" class="btn btn-outline-primary selected" onclick="setCommunitySize(400)">400人社群</button>
                 <button id="btn500" class="btn btn-outline-primary" onclick="setCommunitySize(500)">500人社群</button>
+                <button id="btn800" class="btn btn-outline-primary" onclick="setCommunitySize(800)">800人社群</button>
                 <button id="btn1000" class="btn btn-outline-primary" onclick="setCommunitySize(1000)">1000人社群</button>
             </div>
 
@@ -178,6 +197,11 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- 联系作者 -->
+    <div class="footer">
+        联系作者：<a href="https://t.me/+447498148126" target="_blank">孤风</a>
     </div>
 
     <!-- 引入 Bootstrap JS -->
