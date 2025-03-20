@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星辰导航 - 探索数字宇宙</title>
+    <style>
+        /* 基础样式 */
+        :root {
+            --primary: #6C5B7B;
+            --secondary: #C06C84;
+            --accent: #F8B195;
+            --text: #2D3047;
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%);
+            color: var(--text);
+            font-family: 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* 头部样式 */
+        .header {
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .title {
+            font-size: 3.5rem;
+            color: var(--primary);
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.5);
+            letter-spacing: 2px;
+            margin: 1rem 0;
+        }
+
+        /* 导航网格 */
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 导航卡片 */
+        .nav-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: none;
+            text-decoration: none;
+            display: block;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 烟花画布 */
+        #fireworks {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .nav-card h3 {
+            color: var(--primary);
+            margin: 0 0 1rem;
+            font-size: 1.5rem;
+        }
+
+        .nav-card p {
+            color: #6C757D;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        #adminPanel {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        #adminPanel div {
+            background: rgba(255,255,255,0.98) !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            width: 300px;
+        }
+
+        #adminBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: var(--accent);
+            border: none;
+            padding: 12px 24px;
+            color: white;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        #adminBtn:hover {
+            transform: scale(1.05);
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            font-family: inherit;
+        }
+
+        button[type="submit"] {
+            background: var(--secondary);
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button[type="submit"]:hover {
+            background: #B35771;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 15px var(--accent); }
+            50% { text-shadow: 0 0 25px var(--accent); }
+        }
+
+        /* 新增动态背景 */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                rgba(108, 91, 123, 0.05) 0%, 
+                rgba(192, 108, 132, 0.05) 100%);
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fireworks"></canvas>
+    
+    <div class="header">
+        <h1 class="title">✨ 星辰导航</h1>
+    </div>
+
+    <div class="nav-grid">
+        <!-- 动态生成的导航卡片 -->
+    </div>
+
+    <a href="admin.html" id="adminBtn">🛠️ 管理</a>
+
+    <script>
+        // 烟花粒子系统
+        class Firework {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.particles = [];
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                
+                // 初始烟花表演
+                this.createFirework();
+                this.animate();
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            createFirework() {
+                const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'];
+                for (let i = 0; i < 150; i++) {
+                    this.particles.push({
+                        x: this.canvas.width/2,
+                        y: this.canvas.height/2,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        radius: Math.random() * 2,
+                        speed: {
+                            x: (Math.random() - 0.5) * 10,
+                            y: (Math.random() - 0.5) * 10
+                        },
+                        alpha: 1
+                    });
+                }
+            }
+
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.particles.forEach((p, i) => {
+                    p.x += p.speed.x;
+                    p.y += p.speed.y;
+                    p.alpha -= 0.01;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.globalAlpha = p.alpha;
+                    this.ctx.fill();
+                    
+                    if (p.alpha <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                });
+
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // 初始化烟花
+        window.addEventListener('load', () => {
+            new Firework(document.getElementById('fireworks'));
+            
+            // 点击页面任意位置触发新烟花
+            document.addEventListener('click', () => {
+                new Firework(document.getElementById('fireworks'));
+            });
+        });
+
+        // 数据管理
+        let navData = JSON.parse(localStorage.getItem('navData') || '[]');
+        
+        // 在sha256函数后添加加密解密方法
+        const cryptoUtils = {
+            key: null,
+
+            async generateKey(password) {
+                const keyMaterial = await crypto.subtle.importKey(
+                    "raw",
+                    new TextEncoder().encode(password),
+                    "PBKDF2",
+                    false,
+                    ["deriveKey"]
+                );
+                
+                return await crypto.subtle.deriveKey(
+                    {
+                        name: "PBKDF2",
+                        salt: new TextEncoder().encode("StarryNavSalt"),
+                        iterations: 100000,
+                        hash: "SHA-256"
+                    },
+                    keyMaterial,
+                    { name: "AES-GCM", length: 256 },
+                    true,
+                    ["encrypt", "decrypt"]
+                );
+            },
+
+            async encrypt(text, password) {
+                const key = await this.generateKey(password);
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const encrypted = await crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv },
+                    key,
+                    new TextEncoder().encode(text)
+                );
+                return btoa(String.fromCharCode(...iv) + String.fromCharCode(...new Uint8Array(encrypted)));
+            },
+
+            async decrypt(encryptedText, password) {
+                try {
+                    const key = await this.generateKey(password);
+                    const buffer = Uint8Array.from(atob(encryptedText), c => c.charCodeAt(0));
+                    const iv = buffer.slice(0, 12);
+                    const data = buffer.slice(12);
+                    const decrypted = await crypto.subtle.decrypt(
+                        { name: "AES-GCM", iv },
+                        key,
+                        data
+                    );
+                    return new TextDecoder().decode(decrypted);
+                } catch (e) {
+                    console.error('解密失败:', e);
+                    return '#';
+                }
+            }
+        };
+
+        // 修改导航初始化逻辑
+        function initNav() {
+            const grid = document.querySelector('.nav-grid');
+            grid.innerHTML = navData.map(item => `
+                <a href="#" class="nav-card" 
+                   data-encrypted="${item.encrypted}" 
+                   data-pwd="${item.password}"
+                   onclick="handleNavClick(event)">
+                    <h3>${item.name}</h3>
+                    <p>${item.desc}</p>
+                </a>
+            `).join('');
+        }
+
+        // 添加点击处理函数
+        async function handleNavClick(event) {
+            event.preventDefault();
+            const card = event.currentTarget;
+            const encrypted = card.dataset.encrypted;
+            const pwdHash = card.dataset.pwd;
+            
+            const password = prompt('请输入访问密码：');
+            if (!password) return;
+            
+            const inputHash = await sha256(password);
+            if (inputHash !== pwdHash) {
+                alert('访问密码错误');
+                return;
+            }
+
+            const realUrl = await cryptoUtils.decrypt(encrypted, password);
+            window.open(realUrl, '_blank');
+        }
+
+        // 修改表单提交逻辑
+        document.getElementById('linkForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const linkPassword = prompt('请设置该链接的访问密码：');
+            if (!linkPassword) return;
+            
+            const newItem = {
+                id: Date.now(),
+                name: document.getElementById('linkName').value,
+                url: document.getElementById('linkUrl').value,
+                desc: document.getElementById('linkDesc').value,
+                password: await sha256(linkPassword),
+                encrypted: await cryptoUtils.encrypt(
+                    document.getElementById('linkUrl').value,
+                    linkPassword
+                )
+            };
+            
+            navData.push(newItem);
+            localStorage.setItem('navData', JSON.stringify(navData));
+            initNav();
+            e.target.reset();
+        });
+
+        // 密码验证
+        const sha256 = async (message) => {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+
+        // 修改管理按钮点击事件处理
+        document.getElementById('adminBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const input = prompt('请输入管理密码：');
+                if (!input) return;
+                
+                e.target.textContent = '验证中...';
+                e.target.disabled = true;
+
+                const hashedInput = await sha256(input);
+                if (hashedInput === '185dc7daea25b79cd857b57635f4ab644deb016ab9051e00c9c45de8574ebfb8') {
+                    // 使用localStorage替代sessionStorage
+                    localStorage.setItem('adminAuth', 'true');
+                    // 添加时间戳防止缓存
+                    window.location.href = 'admin.html?t=' + Date.now();
+                } else {
+                    alert('密码错误');
+                }
+            } catch (error) {
+                console.error('认证出错:', error);
+                alert('发生错误，请查看控制台');
+            } finally {
+                e.target.textContent = '🛠️ 管理';
+                e.target.disabled = false;
+            }
+        });
+
+        // 临时调试代码（可在控制台运行）
+        async function getHash(pwd) {
+            const hash = await sha256(pwd);
+            console.log('哈希值：', hash);
+            return hash;
+        }
+        getHash('您的新密码');
+
+        // 新增：渲染导航列表
+        function renderNavList() {
+            const container = document.getElementById('navList');
+            container.innerHTML = navData.map(item => `
+                <div class="nav-item" data-id="${item.id}" style="margin-bottom:15px; padding:15px; background:rgba(0,0,0,0.05); border-radius:8px;">
+                    <input type="text" value="${item.name}" 
+                           style="width:100%; margin-bottom:5px;" 
+                           onchange="updateNavItem(${item.id}, 'name', this.value)">
+                    <input type="url" value="${item.url}" 
+                           style="width:100%; margin-bottom:5px;" 
+                           onchange="handleUrlChange(${item.id}, this.value)">
+                    <textarea style="width:100%; margin-bottom:5px;" 
+                              onchange="updateNavItem(${item.id}, 'desc', this.value)">${item.desc}</textarea>
+                    <div style="display:flex; gap:5px;">
+                        <input type="password" placeholder="新访问密码" 
+                               style="flex:1;" id="pwd-${item.id}">
+                        <button onclick="updatePassword(${item.id})" 
+                                style="padding:5px 10px; background:var(--primary); color:white; border:none; border-radius:4px;">
+                            更新密码
+                        </button>
+                        <button onclick="deleteNavItem(${item.id})" 
+                                style="padding:5px 10px; background:#ff4757; color:white; border:none; border-radius:4px;">
+                            删除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 新增：更新导航项
+        function updateNavItem(id, field, value) {
+            const item = navData.find(i => i.id === id);
+            if (item) {
+                item[field] = value;
+                localStorage.setItem('navData', JSON.stringify(navData));
+                initNav(); // 更新前端显示
+            }
+        }
+
+        // 新增：处理URL修改（需要重新加密）
+        async function handleUrlChange(id, newUrl) {
+            const item = navData.find(i => i.id === id);
+            if (!item) return;
+
+            const password = prompt('请输入当前访问密码以修改链接：');
+            if (!password) return;
+
+            // 验证密码
+            const inputHash = await sha256(password);
+            if (inputHash !== item.password) {
+                alert('密码错误，无法修改');
+                return;
+            }
+
+            // 重新加密URL
+            item.url = newUrl;
+            item.encrypted = await cryptoUtils.encrypt(newUrl, password);
+            localStorage.setItem('navData', JSON.stringify(navData));
+            initNav();
+        }
+
+        // 新增：更新密码
+        async function updatePassword(id) {
+            const item = navData.find(i => i.id === id);
+            if (!item) return;
+
+            const newPassword = document.getElementById(`pwd-${id}`).value;
+            if (!newPassword) {
+                alert('请输入新密码');
+                return;
+            }
+
+            // 解密原URL
+            const oldPassword = prompt('请输入原访问密码：');
+            const oldHash = await sha256(oldPassword);
+            if (oldHash !== item.password) {
+                alert('原密码错误');
+                return;
+            }
+
+            try {
+                const decryptedUrl = await cryptoUtils.decrypt(item.encrypted, oldPassword);
+                // 使用新密码重新加密
+                item.password = await sha256(newPassword);
+                item.encrypted = await cryptoUtils.encrypt(decryptedUrl, newPassword);
+                localStorage.setItem('navData', JSON.stringify(navData));
+                alert('密码更新成功');
+                renderNavList();
+            } catch (e) {
+                alert('密码更新失败：' + e.message);
+            }
+        }
+
+        // 新增：删除导航项
+        function deleteNavItem(id) {
+            if (confirm('确定要删除这个导航项吗？')) {
+                navData = navData.filter(i => i.id !== id);
+                localStorage.setItem('navData', JSON.stringify(navData));
+                renderNavList();
+                initNav();
+            }
+        }
+
+        // 初始化
+        initNav();
+    </script>
+</body>
+</html> 

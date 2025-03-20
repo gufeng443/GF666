@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航管理后台</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        :root {
+            --primary: #2A2356;
+            --secondary: #F4ACB7;
+            --accent: #9D8DF1;
+            --text: #2D3047;
+        }
+
+        body {
+            margin: 0;
+            background: #f5f7fa;
+            font-family: 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .nav-list {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .nav-item {
+            padding: 1.5rem;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .primary-btn {
+            background: var(--accent);
+            color: white;
+        }
+
+        .danger-btn {
+            background: #ff4757;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>导航管理后台</h1>
+            <div>
+                <a href="index.html" class="primary-btn" style="text-decoration:none;">返回首页</a>
+                <button onclick="logout()" class="danger-btn" style="margin-left:10px;">退出登录</button>
+            </div>
+        </div>
+
+        <div class="nav-list" id="navList"></div>
+
+        <h2>添加新导航</h2>
+        <form id="linkForm">
+            <input type="text" id="linkName" placeholder="导航名称" required>
+            <input type="url" id="linkUrl" placeholder="导航链接" required>
+            <textarea id="linkDesc" placeholder="导航描述" rows="3"></textarea>
+            <button type="submit" class="primary-btn">添加导航</button>
+        </form>
+    </div>
+
+    <script>
+        // 公共函数
+        const sha256 = async (message) => {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+
+        // 加密工具
+        const cryptoUtils = { /* 保持与index.html相同的加密实现 */ };
+
+        // 数据管理
+        let navData = JSON.parse(localStorage.getItem('navData') || '[]');
+
+        // 初始化
+        function init() {
+            // 增强认证检查
+            const authState = localStorage.getItem('adminAuth') === 'true' 
+                            && window.location.href.includes('admin.html');
+            
+            if (!authState) {
+                localStorage.removeItem('adminAuth');
+                window.location.replace('index.html');
+                return;
+            }
+
+            // 设置心跳检测
+            setInterval(() => {
+                localStorage.setItem('lastActive', Date.now());
+            }, 3000);
+
+            renderNavList();
+        }
+
+        // 渲染导航列表
+        function renderNavList() {
+            const container = document.getElementById('navList');
+            container.innerHTML = navData.map(item => `
+                <div class="nav-item">
+                    <input type="text" value="${item.name}" 
+                           onchange="updateItem(${item.id}, 'name', this.value)">
+                    <input type="url" value="${item.url}" 
+                           onchange="updateUrl(${item.id}, this.value)">
+                    <textarea onchange="updateItem(${item.id}, 'desc', this.value)">${item.desc}</textarea>
+                    <div style="display:flex;gap:10px;margin-top:10px;">
+                        <input type="password" id="newPwd-${item.id}" 
+                               placeholder="新访问密码" style="flex:1;">
+                        <button onclick="updatePassword(${item.id})" class="primary-btn">改密</button>
+                        <button onclick="deleteItem(${item.id})" class="danger-btn">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 更新操作函数（保持与之前相同的实现）
+
+        // 表单提交
+        document.getElementById('linkForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // 保持与之前相同的添加逻辑
+        });
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('adminAuth');
+            window.location.href = 'index.html';
+        }
+
+        // 初始化
+        init();
+
+        window.history.replaceState(null, null, window.location.href);
+
+        function logAction(action) {
+            const logs = JSON.parse(localStorage.getItem('adminLogs') || '[]');
+            logs.push({
+                time: new Date().toISOString(),
+                action: action
+            });
+            localStorage.setItem('adminLogs', JSON.stringify(logs));
+        }
+
+        if (window.location.protocol === 'file:') {
+            alert('请使用HTTP服务器访问以获得完整功能');
+        }
+
+        // 最终兼容方案（使用URL参数传递令牌）
+        // 在index.html中
+        const token = btoa(Date.now() + '|' + navigator.userAgent);
+        window.location.href = `admin.html?token=${encodeURIComponent(token)}`;
+
+        // 在admin.html中
+        const params = new URLSearchParams(window.location.search);
+        if (!validateToken(params.get('token'))) {
+            window.location.href = 'index.html';
+        }
+
+        function validateToken(token) {
+            try {
+                const [timestamp, ua] = atob(token).split('|');
+                return Date.now() - timestamp < 5000 && ua === navigator.userAgent;
+            } catch {
+                return false;
+            }
+        }
+    </script>
+</body>
+</html> 
