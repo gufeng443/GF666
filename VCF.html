@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT 转 VCF 转换器</title>
+    <title>TXT转VCF通讯录转换器</title>
     <style>
         :root {
             --primary-color: #4a89dc;
@@ -355,7 +355,51 @@
             border-top: 1px solid var(--border-color);
         }
 
-        /* 响应式调整 */
+        .share-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .share-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .share-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .share-btn i {
+            font-size: 16px;
+        }
+
+        .copy-status {
+            color: var(--success-color);
+            display: none;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .share-instruction {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -369,7 +413,7 @@
                 font-size: 2rem;
             }
 
-            .action-buttons {
+            .action-buttons, .share-actions {
                 grid-template-columns: 1fr;
             }
         }
@@ -399,6 +443,9 @@
 8613913913999
 8615815815888"></textarea>
                 </div>
+                <div class="example">
+
+                </div>
 
                 <button id="convertTextBtn" class="btn btn-block">
                     <i class="fas fa-exchange-alt"></i> 转换文本数据
@@ -419,10 +466,7 @@
                 </div>
 
                 <div class="example">
-示例文件内容：
-8613800138000 张三
-8613913913999 李四
-8615815815888 王五
+
                 </div>
 
                 <button id="convertFileBtn" class="btn btn-block">
@@ -454,20 +498,33 @@
                 <a id="downloadLink" class="btn" download="contacts.vcf">
                     <i class="fas fa-download"></i> 下载VCF文件
                 </a>
-                <button id="copyLinkBtn" class="btn">
-                    <i class="fas fa-copy"></i> 复制分享链接
+                <button id="generateLinkBtn" class="btn">
+                    <i class="fas fa-link"></i> 生成分享链接
                 </button>
             </div>
 
-            <a id="shareLink" class="download-link"></a>
-            <p id="copyStatus" style="color: var(--success-color); display: none; margin-top: 10px; text-align: center;">
-                <i class="fas fa-check-circle"></i> 链接已复制到剪贴板！
-            </p>
+            <div id="shareSection" style="display: none;">
+                <div class="share-actions">
+                    <button class="share-btn" id="copyBtn">
+                        <i class="fas fa-copy"></i> 复制链接
+                    </button>
+                    <button class="share-btn" id="shareBtn">
+                        <i class="fas fa-share-alt"></i> 直接分享
+                    </button>
+                </div>
+                <a id="shareLink" class="download-link"></a>
+                <p id="copyStatus" class="copy-status">
+                    <i class="fas fa-check-circle"></i> 链接已复制到剪贴板！
+                </p>
+                <div class="share-instruction">
+                    <p><i class="fas fa-info-circle"></i> 提示：此链接直接指向VCF文件，可保存到手机通讯录。链接仅在当前浏览器会话中有效。</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <footer>
-        <p>© 2025 TXT转VCF工具 | 使用现代Web技术构建 | 所有处理均在浏览器完成，保障数据安全</p>
+        <p>© 2023 TXT转VCF工具 | 使用现代Web技术构建 | 所有处理均在浏览器完成，保障数据安全</p>
     </footer>
 
     <script>
@@ -481,14 +538,18 @@
             const loading = document.getElementById('loading');
             const resultContainer = document.getElementById('resultContainer');
             const downloadLink = document.getElementById('downloadLink');
+            const generateLinkBtn = document.getElementById('generateLinkBtn');
+            const shareSection = document.getElementById('shareSection');
             const shareLink = document.getElementById('shareLink');
-            const copyLinkBtn = document.getElementById('copyLinkBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const shareBtn = document.getElementById('shareBtn');
             const copyStatus = document.getElementById('copyStatus');
             const contactCount = document.getElementById('contactCount');
             const vcfPreview = document.getElementById('vcfPreview');
 
-            let vcfBlob = null;
-            let vcfUrl = null;
+            let vcfContent = '';
+            let fileName = 'contacts.vcf';
+            let currentBlobUrl = null;
 
             // 文件上传区域点击事件
             fileUpload.addEventListener('click', function() {
@@ -551,10 +612,36 @@
                 }
             });
 
+            // 生成分享链接按钮
+            generateLinkBtn.addEventListener('click', function() {
+                if (!vcfContent) return;
+
+                // 清理之前的Blob URL
+                if (currentBlobUrl) {
+                    URL.revokeObjectURL(currentBlobUrl);
+                }
+
+                // 创建新的Blob和URL
+                const blob = new Blob([vcfContent], { type: 'text/vcard' });
+                currentBlobUrl = URL.createObjectURL(blob);
+
+                // 显示分享链接
+                shareLink.href = currentBlobUrl;
+                shareLink.textContent = "点击下载VCF文件";
+                shareSection.style.display = 'block';
+
+                // 更新下载按钮
+                downloadLink.href = currentBlobUrl;
+                downloadLink.download = fileName;
+
+                // 滚动到分享区域
+                shareSection.scrollIntoView({ behavior: 'smooth' });
+            });
+
             // 复制链接按钮
-            copyLinkBtn.addEventListener('click', function() {
-                if (vcfUrl) {
-                    navigator.clipboard.writeText(vcfUrl).then(function() {
+            copyBtn.addEventListener('click', function() {
+                if (shareLink.href) {
+                    navigator.clipboard.writeText(shareLink.href).then(function() {
                         copyStatus.style.display = 'block';
                         setTimeout(() => {
                             copyStatus.style.display = 'none';
@@ -563,10 +650,33 @@
                 }
             });
 
+            // 直接分享按钮
+            shareBtn.addEventListener('click', function() {
+                if (navigator.share && shareLink.href) {
+                    navigator.share({
+                        title: 'VCF通讯录文件',
+                        text: '我分享了一个VCF通讯录文件',
+                        url: shareLink.href
+                    }).catch(err => {
+                        console.log('分享失败:', err);
+                        alert('分享失败: ' + err.message);
+                    });
+                } else {
+                    alert('您的浏览器不支持直接分享功能，请手动复制链接');
+                }
+            });
+
             // 开始转换
             function startConversion() {
                 loading.style.display = 'block';
                 resultContainer.style.display = 'none';
+                shareSection.style.display = 'none';
+
+                // 清理之前的Blob URL
+                if (currentBlobUrl) {
+                    URL.revokeObjectURL(currentBlobUrl);
+                    currentBlobUrl = null;
+                }
             }
 
             // 读取文件内容
@@ -574,6 +684,7 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     inputText.value = e.target.result;
+                    fileName = file.name.replace('.txt', '.vcf') || 'contacts.vcf';
                 };
                 reader.readAsText(file);
             }
@@ -582,85 +693,80 @@
             function processFile(file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    fileName = file.name.replace('.txt', '.vcf') || 'contacts.vcf';
                     processText(e.target.result);
                 };
                 reader.readAsText(file);
             }
 
+            // 处理文本数据
+            function processText(textData) {
+                const lines = textData.split('\n');
+                vcfContent = '';
+                let dataCount = 0;
 
+                // 计算总联系人数量
+                const totalContacts = lines.filter(line => {
+                    const trimmedLine = line.trim();
+                    return trimmedLine && trimmedLine.match(/^(\+|)\d+/);
+                }).length;
 
-        // 处理文本数据
-        function processText(textData) {
-            const lines = textData.split('\n');
-            let vcfContent = '';
-            let dataCount = 0;
+                // 根据总数确定位数（至少3位）
+                const padLength = Math.max(3, String(totalContacts).length);
 
-            // 首先计算总联系人数量，确定需要多少位
-            let totalContacts = 0;
-            for (const line of lines) {
-                const trimmedLine = line.trim();
-                if (trimmedLine === '') continue;
-                if (trimmedLine.match(/^(\+|)\d+/)) {
-                    totalContacts++;
-                }
-            }
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) continue;
 
-            // 根据总数确定位数（至少3位）
-            const padLength = Math.max(3, String(totalContacts).length);
+                    // 匹配以数字或+开头的行
+                    if (trimmedLine.match(/^(\+|)\d+/)) {
+                        // 分割电话号码和姓名
+                        const parts = trimmedLine.split(/\s+/);
+                        let number = parts[0];
 
-            for (const line of lines) {
-                const trimmedLine = line.trim();
-                if (trimmedLine === '') continue;
+                        // 如果号码以+开头，保留+，否则去掉可能的前导+
+                        if (!number.startsWith('+')) {
+                            number = number.replace(/^\+/, '');
+                        }
 
-                // 匹配以数字或+开头的行
-                if (trimmedLine.match(/^(\+|)\d+/)) {
-                    // 分割电话号码和姓名
-                    const parts = trimmedLine.split(/\s+/);
-                    let number = parts[0];
+                        // 生成固定位数的编号（如001, 002,...010,...100）
+                        const contactNumber = String(dataCount + 1).padStart(padLength, '0');
+                        let name = parts.length > 1 ? parts.slice(1).join(' ') : `联系人${contactNumber}`;
 
-                    // 如果号码以+开头，保留+，否则去掉可能的前导+
-                    if (!number.startsWith('+')) {
-                        number = number.replace(/^\+/, '');
+                        // 生成VCF条目
+                        vcfContent += `BEGIN:VCARD\n`;
+                        vcfContent += `VERSION:3.0\n`;
+                        vcfContent += `N:;${name};;;\n`;
+                        vcfContent += `FN:${name}\n`;
+                        vcfContent += `TEL;type=CELL;type=VOICE;type=pref:${number}\n`;
+                        vcfContent += `END:VCARD\n`;
+
+                        dataCount++;
                     }
-
-                    // 生成固定位数的编号（如001, 002,...010,...100）
-                    const contactNumber = String(dataCount + 1).padStart(padLength, '0');
-                    let name = parts.length > 1 ? parts.slice(1).join(' ') : `联系人${contactNumber}`;
-
-                    // 生成VCF条目
-                    vcfContent += `BEGIN:VCARD\n`;
-                    vcfContent += `VERSION:3.0\n`;
-                    vcfContent += `N:;${name};;;\n`;
-                    vcfContent += `FN:${name}\n`;
-                    vcfContent += `TEL;type=CELL;type=VOICE;type=pref:${number}\n`;
-                    vcfContent += `END:VCARD\n`;
-
-                    dataCount++;
                 }
+
+                showResult(vcfContent, dataCount, fileName);
             }
 
-
+            // 显示结果
+            function showResult(content, count, name) {
                 // 更新联系人计数
-                contactCount.textContent = `${dataCount} 个联系人`;
+                contactCount.textContent = `${count} 个联系人`;
 
                 // 显示预览（前5个联系人）
-                const previewLines = vcfContent.split('\n').slice(0, 20).join('\n');
-                vcfPreview.textContent = previewLines + (dataCount > 3 ? '\n...' : '');
+                const previewLines = content.split('\n').slice(0, 20).join('\n');
+                vcfPreview.textContent = previewLines + (count > 3 ? '\n...' : '');
 
-                // 生成Blob和URL
-                vcfBlob = new Blob([vcfContent], { type: 'text/vcard' });
-                if (vcfUrl) {
-                    URL.revokeObjectURL(vcfUrl);
-                }
-                vcfUrl = URL.createObjectURL(vcfBlob);
+                // 创建临时Blob和URL
+                const blob = new Blob([content], { type: 'text/vcard' });
+                currentBlobUrl = URL.createObjectURL(blob);
 
-                // 更新下载链接
-                const fileName = fileInput.files.length ?
-                    fileInput.files[0].name.replace('.txt', '.vcf') : 'contacts.vcf';
-                downloadLink.href = vcfUrl;
-                downloadLink.download = fileName;
-                shareLink.href = vcfUrl;
-                shareLink.textContent = vcfUrl;
+                // 设置下载链接
+                downloadLink.href = currentBlobUrl;
+                downloadLink.download = name || 'contacts.vcf';
+
+                // 隐藏分享区域（等待用户点击生成）
+                shareSection.style.display = 'none';
 
                 // 显示结果
                 loading.style.display = 'none';
@@ -670,10 +776,10 @@
                 resultContainer.scrollIntoView({ behavior: 'smooth' });
             }
 
-            // 清理对象URL
+            // 清理对象URL（当用户离开页面时）
             window.addEventListener('beforeunload', function() {
-                if (vcfUrl) {
-                    URL.revokeObjectURL(vcfUrl);
+                if (currentBlobUrl) {
+                    URL.revokeObjectURL(currentBlobUrl);
                 }
             });
         });
