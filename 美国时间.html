@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp号码地区分类工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .login-container {
+            text-align: center;
+            padding: 40px;
+        }
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .login-button {
+            background-color: #25D366;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .login-button:hover {
+            background-color: #128C7E;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+            display: none;
+        }
+        .main-content {
+            display: none;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 20px;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+        }
+        button {
+            background-color: #25D366;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #128C7E;
+        }
+        .result {
+            margin-top: 30px;
+            display: none;
+        }
+        .country {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+        .country-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #25D366;
+        }
+        .area-code {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .area-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .area-name {
+            font-weight: bold;
+            color: #555;
+        }
+        .area-time {
+            font-size: 14px;
+            color: #666;
+            background-color: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .numbers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .number {
+            background-color: #e9ecef;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+            }
+            .area-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loginContainer" class="container login-container">
+        <h1>WhatsApp号码地区分类工具</h1>
+        <input type="password" id="passwordInput" class="login-input" placeholder="请输入密码">
+        <button onclick="verifyPassword()" class="login-button">登录</button>
+        <div id="errorMessage" class="error-message">密码错误，请重试</div>
+    </div>
+
+    <div id="mainContainer" class="container main-content">
+        <h1>WhatsApp号码地区分类工具</h1>
+        <p>请输入多个WhatsApp号码，每行一个：</p>
+        <textarea id="phoneNumbers" placeholder="例如：
+14693215187
+12166241986
+12166888718
+14693321649"></textarea>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button onclick="classifyNumbers()" style="flex: 1;">分类号码</button>
+            <button onclick="exportNumbers()" style="flex: 1; background-color: #4CAF50;">导出号码</button>
+        </div>
+
+        <div id="result" class="result">
+            <h2>分类结果</h2>
+            <div id="countryResults"></div>
+        </div>
+    </div>
+
+    <script>
+        // 密码验证功能
+        async function verifyPassword() {
+            const passwordInput = document.getElementById('passwordInput');
+            const errorMessage = document.getElementById('errorMessage');
+            const loginContainer = document.getElementById('loginContainer');
+            const mainContainer = document.getElementById('mainContainer');
+
+            try {
+                // 获取密码文件内容
+                const response = await fetch('https://gufeng443.github.io/GF666/mm.txt');
+                const correctPassword = await response.text();
+
+                // 验证密码
+                if (passwordInput.value.trim() === correctPassword.trim()) {
+                    // 密码正确，显示主界面
+                    loginContainer.style.display = 'none';
+                    mainContainer.style.display = 'block';
+                    errorMessage.style.display = 'none';
+                } else {
+                    // 密码错误
+                    errorMessage.style.display = 'block';
+                    passwordInput.value = '';
+                }
+            } catch (error) {
+                console.error('验证失败:', error);
+                errorMessage.textContent = '验证失败，请稍后重试';
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        // 添加回车键登录支持
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifyPassword();
+            }
+        });
+
+        // 国家代码和区号数据库
+        const countryData = {
+            "1": {
+                name: "美国/加拿大",
+                timezone: "America/New_York",
+                areaCodes: {
+                    "201": { name: "新泽西州", timezone: "America/New_York" },
+                    "202": { name: "华盛顿特区", timezone: "America/New_York" },
+                    "203": { name: "康涅狄格州", timezone: "America/New_York" },
+                    "204": { name: "曼尼托巴省(加拿大)", timezone: "America/Winnipeg" },
+                    "205": { name: "阿拉巴马州", timezone: "America/Chicago" },
+                    "206": { name: "华盛顿州", timezone: "America/Los_Angeles" },
+                    "207": { name: "缅因州", timezone: "America/New_York" },
+                    "208": { name: "爱达荷州", timezone: "America/Denver" },
+                    "209": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "210": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "212": { name: "纽约州(曼哈顿)", timezone: "America/New_York" },
+                    "213": { name: "加利福尼亚州(洛杉矶)", timezone: "America/Los_Angeles" },
+                    "214": { name: "德克萨斯州(达拉斯)", timezone: "America/Chicago" },
+                    "215": { name: "宾夕法尼亚州(费城)", timezone: "America/New_York" },
+                    "216": { name: "俄亥俄州(克利夫兰)", timezone: "America/New_York" },
+                    "217": { name: "伊利诺伊州", timezone: "America/Chicago" },
+                    "218": { name: "明尼苏达州", timezone: "America/Chicago" },
+                    "219": { name: "印第安纳州", timezone: "America/Chicago" },
+                    "224": { name: "伊利诺伊州", timezone: "America/Chicago" },
+                    "225": { name: "路易斯安那州", timezone: "America/Chicago" },
+                    "226": { name: "安大略省(加拿大)", timezone: "America/Toronto" },
+                    "228": { name: "密西西比州", timezone: "America/Chicago" },
+                    "229": { name: "乔治亚州", timezone: "America/New_York" },
+                    "231": { name: "密歇根州", timezone: "America/Detroit" },
+                    "234": { name: "俄亥俄州", timezone: "America/New_York" },
+                    "239": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "240": { name: "马里兰州", timezone: "America/New_York" },
+                    "242": { name: "巴哈马", timezone: "America/Nassau" },
+                    "246": { name: "巴巴多斯", timezone: "America/Barbados" },
+                    "248": { name: "密歇根州", timezone: "America/Detroit" },
+                    "250": { name: "不列颠哥伦比亚省(加拿大)", timezone: "America/Vancouver" },
+                    "251": { name: "阿拉巴马州", timezone: "America/Chicago" },
+                    "252": { name: "北卡罗来纳州", timezone: "America/New_York" },
+                    "253": { name: "华盛顿州", timezone: "America/Los_Angeles" },
+                    "254": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "256": { name: "阿拉巴马州", timezone: "America/Chicago" },
+                    "260": { name: "印第安纳州", timezone: "America/Chicago" },
+                    "262": { name: "威斯康星州", timezone: "America/Chicago" },
+                    "264": { name: "安圭拉", timezone: "America/Anguilla" },
+                    "267": { name: "宾夕法尼亚州(费城)", timezone: "America/New_York" },
+                    "268": { name: "安提瓜和巴布达", timezone: "America/Antigua" },
+                    "269": { name: "密歇根州", timezone: "America/Detroit" },
+                    "270": { name: "肯塔基州", timezone: "America/New_York" },
+                    "276": { name: "弗吉尼亚州", timezone: "America/New_York" },
+                    "281": { name: "德克萨斯州(休斯顿)", timezone: "America/Chicago" },
+                    "284": { name: "英属维尔京群岛", timezone: "America/Tortola" },
+                    "289": { name: "安大略省(加拿大)", timezone: "America/Toronto" },
+                    "301": { name: "马里兰州", timezone: "America/New_York" },
+                    "302": { name: "特拉华州", timezone: "America/New_York" },
+                    "303": { name: "科罗拉多州(丹佛)", timezone: "America/Denver" },
+                    "304": { name: "西弗吉尼亚州", timezone: "America/New_York" },
+                    "305": { name: "佛罗里达州(迈阿密)", timezone: "America/New_York" },
+                    "306": { name: "萨斯喀彻温省(加拿大)", timezone: "America/Regina" },
+                    "307": { name: "怀俄明州", timezone: "America/Denver" },
+                    "308": { name: "内布拉斯加州", timezone: "America/Chicago" },
+                    "309": { name: "伊利诺伊州", timezone: "America/Chicago" },
+                    "310": { name: "加利福尼亚州(洛杉矶)", timezone: "America/Los_Angeles" },
+                    "312": { name: "伊利诺伊州(芝加哥)", timezone: "America/Chicago" },
+                    "314": { name: "密苏里州(圣路易斯)", timezone: "America/Chicago" },
+                    "315": { name: "纽约州", timezone: "America/New_York" },
+                    "316": { name: "堪萨斯州", timezone: "America/Chicago" },
+                    "317": { name: "印第安纳州(印第安纳波利斯)", timezone: "America/Chicago" },
+                    "318": { name: "路易斯安那州", timezone: "America/Chicago" },
+                    "319": { name: "爱荷华州", timezone: "America/Chicago" },
+                    "320": { name: "明尼苏达州", timezone: "America/Chicago" },
+                    "321": { name: "佛罗里达州(奥兰多)", timezone: "America/New_York" },
+                    "323": { name: "加利福尼亚州(洛杉矶)", timezone: "America/Los_Angeles" },
+                    "325": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "330": { name: "俄亥俄州", timezone: "America/New_York" },
+                    "334": { name: "阿拉巴马州", timezone: "America/Chicago" },
+                    "336": { name: "北卡罗来纳州", timezone: "America/New_York" },
+                    "337": { name: "路易斯安那州", timezone: "America/Chicago" },
+                    "339": { name: "马萨诸塞州", timezone: "America/New_York" },
+                    "340": { name: "美属维尔京群岛", timezone: "America/St_Thomas" },
+                    "345": { name: "开曼群岛", timezone: "America/Cayman" },
+                    "347": { name: "纽约州", timezone: "America/New_York" },
+                    "351": { name: "马萨诸塞州", timezone: "America/New_York" },
+                    "352": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "360": { name: "华盛顿州", timezone: "America/Los_Angeles" },
+                    "361": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "385": { name: "犹他州", timezone: "America/Denver" },
+                    "386": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "401": { name: "罗德岛州", timezone: "America/New_York" },
+                    "402": { name: "内布拉斯加州", timezone: "America/Chicago" },
+                    "403": { name: "阿尔伯塔省(加拿大)", timezone: "America/Edmonton" },
+                    "404": { name: "乔治亚州(亚特兰大)", timezone: "America/New_York" },
+                    "405": { name: "俄克拉荷马州", timezone: "America/Chicago" },
+                    "406": { name: "蒙大拿州", timezone: "America/Denver" },
+                    "407": { name: "佛罗里达州(奥兰多)", timezone: "America/New_York" },
+                    "408": { name: "加利福尼亚州(圣何塞)", timezone: "America/Los_Angeles" },
+                    "409": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "410": { name: "马里兰州", timezone: "America/New_York" },
+                    "412": { name: "宾夕法尼亚州(匹兹堡)", timezone: "America/New_York" },
+                    "413": { name: "马萨诸塞州", timezone: "America/New_York" },
+                    "414": { name: "威斯康星州(密尔沃基)", timezone: "America/Chicago" },
+                    "415": { name: "加利福尼亚州(旧金山)", timezone: "America/Los_Angeles" },
+                    "416": { name: "安大略省(多伦多,加拿大)", timezone: "America/Toronto" },
+                    "417": { name: "密苏里州", timezone: "America/Chicago" },
+                    "418": { name: "魁北克省(加拿大)", timezone: "America/Montreal" },
+                    "419": { name: "俄亥俄州", timezone: "America/New_York" },
+                    "423": { name: "田纳西州", timezone: "America/New_York" },
+                    "424": { name: "加利福尼亚州(洛杉矶)", timezone: "America/Los_Angeles" },
+                    "425": { name: "华盛顿州", timezone: "America/Los_Angeles" },
+                    "430": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "432": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "434": { name: "弗吉尼亚州", timezone: "America/New_York" },
+                    "435": { name: "犹他州", timezone: "America/Denver" },
+                    "437": { name: "安大略省(加拿大)", timezone: "America/Toronto" },
+                    "438": { name: "魁北克省(加拿大)", timezone: "America/Montreal" },
+                    "440": { name: "俄亥俄州", timezone: "America/New_York" },
+                    "441": { name: "百慕大", timezone: "Atlantic/Bermuda" },
+                    "443": { name: "马里兰州", timezone: "America/New_York" },
+                    "450": { name: "魁北克省(加拿大)", timezone: "America/Montreal" },
+                    "458": { name: "俄勒冈州", timezone: "America/Los_Angeles" },
+                    "469": { name: "德克萨斯州(达拉斯)", timezone: "America/Chicago" },
+                    "470": { name: "乔治亚州", timezone: "America/New_York" },
+                    "473": { name: "格林纳达", timezone: "America/Grenada" },
+                    "475": { name: "康涅狄格州", timezone: "America/New_York" },
+                    "478": { name: "乔治亚州", timezone: "America/New_York" },
+                    "479": { name: "阿肯色州", timezone: "America/Chicago" },
+                    "480": { name: "亚利桑那州", timezone: "America/Phoenix" },
+                    "484": { name: "宾夕法尼亚州", timezone: "America/New_York" },
+                    "501": { name: "阿肯色州", timezone: "America/Chicago" },
+                    "502": { name: "肯塔基州", timezone: "America/New_York" },
+                    "503": { name: "俄勒冈州(波特兰)", timezone: "America/Los_Angeles" },
+                    "504": { name: "路易斯安那州(新奥尔良)", timezone: "America/Chicago" },
+                    "505": { name: "新墨西哥州", timezone: "America/Denver" },
+                    "506": { name: "新不伦瑞克省(加拿大)", timezone: "America/Moncton" },
+                    "507": { name: "明尼苏达州", timezone: "America/Chicago" },
+                    "508": { name: "马萨诸塞州", timezone: "America/New_York" },
+                    "509": { name: "华盛顿州", timezone: "America/Los_Angeles" },
+                    "510": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "512": { name: "德克萨斯州(奥斯汀)", timezone: "America/Chicago" },
+                    "513": { name: "俄亥俄州(辛辛那提)", timezone: "America/New_York" },
+                    "514": { name: "魁北克省(蒙特利尔,加拿大)", timezone: "America/Montreal" },
+                    "515": { name: "爱荷华州", timezone: "America/Chicago" },
+                    "516": { name: "纽约州(长岛)", timezone: "America/New_York" },
+                    "517": { name: "密歇根州", timezone: "America/Detroit" },
+                    "518": { name: "纽约州", timezone: "America/New_York" },
+                    "519": { name: "安大略省(加拿大)", timezone: "America/Toronto" },
+                    "520": { name: "亚利桑那州", timezone: "America/Phoenix" },
+                    "530": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "540": { name: "弗吉尼亚州", timezone: "America/New_York" },
+                    "541": { name: "俄勒冈州", timezone: "America/Los_Angeles" },
+                    "551": { name: "新泽西州", timezone: "America/New_York" },
+                    "559": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "561": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "562": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "570": { name: "宾夕法尼亚州", timezone: "America/New_York" },
+                    "571": { name: "弗吉尼亚州", timezone: "America/New_York" },
+                    "573": { name: "密苏里州", timezone: "America/Chicago" },
+                    "574": { name: "印第安纳州", timezone: "America/Chicago" },
+                    "575": { name: "新墨西哥州", timezone: "America/Denver" },
+                    "585": { name: "纽约州", timezone: "America/New_York" },
+                    "586": { name: "密歇根州", timezone: "America/Detroit" },
+                    "601": { name: "密西西比州", timezone: "America/Chicago" },
+                    "602": { name: "亚利桑那州(凤凰城)", timezone: "America/Phoenix" },
+                    "603": { name: "新罕布什尔州", timezone: "America/New_York" },
+                    "604": { name: "不列颠哥伦比亚省(温哥华,加拿大)", timezone: "America/Vancouver" },
+                    "605": { name: "南达科他州", timezone: "America/Chicago" },
+                    "606": { name: "肯塔基州", timezone: "America/New_York" },
+                    "607": { name: "纽约州", timezone: "America/New_York" },
+                    "608": { name: "威斯康星州", timezone: "America/Chicago" },
+                    "609": { name: "新泽西州", timezone: "America/New_York" },
+                    "610": { name: "宾夕法尼亚州", timezone: "America/New_York" },
+                    "612": { name: "明尼苏达州(明尼阿波利斯)", timezone: "America/Chicago" },
+                    "613": { name: "安大略省(渥太华,加拿大)", timezone: "America/Toronto" },
+                    "614": { name: "俄亥俄州(哥伦布)", timezone: "America/New_York" },
+                    "615": { name: "田纳西州(纳什维尔)", timezone: "America/Chicago" },
+                    "616": { name: "密歇根州", timezone: "America/Detroit" },
+                    "617": { name: "马萨诸塞州(波士顿)", timezone: "America/New_York" },
+                    "618": { name: "伊利诺伊州", timezone: "America/Chicago" },
+                    "619": { name: "加利福尼亚州(圣地亚哥)", timezone: "America/Los_Angeles" },
+                    "623": { name: "亚利桑那州", timezone: "America/Phoenix" },
+                    "626": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "628": { name: "加利福尼亚州(旧金山)", timezone: "America/Los_Angeles" },
+                    "630": { name: "伊利诺伊州", timezone: "America/Chicago" },
+                    "631": { name: "纽约州(长岛)", timezone: "America/New_York" },
+                    "636": { name: "密苏里州", timezone: "America/Chicago" },
+                    "646": { name: "纽约州", timezone: "America/New_York" },
+                    "647": { name: "安大略省(多伦多,加拿大)", timezone: "America/Toronto" },
+                    "650": { name: "加利福尼亚州(旧金山湾区)", timezone: "America/Los_Angeles" },
+                    "651": { name: "明尼苏达州(圣保罗)", timezone: "America/Chicago" },
+                    "657": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "661": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "662": { name: "密西西比州", timezone: "America/Chicago" },
+                    "667": { name: "马里兰州", timezone: "America/New_York" },
+                    "669": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "678": { name: "乔治亚州(亚特兰大)", timezone: "America/New_York" },
+                    "682": { name: "德克萨斯州(沃斯堡)", timezone: "America/Chicago" },
+                    "701": { name: "北达科他州", timezone: "America/Chicago" },
+                    "702": { name: "内华达州(拉斯维加斯)", timezone: "America/Los_Angeles" },
+                    "703": { name: "弗吉尼亚州", timezone: "America/New_York" },
+                    "704": { name: "北卡罗来纳州", timezone: "America/New_York" },
+                    "705": { name: "安大略省(加拿大)", timezone: "America/Toronto" },
+                    "706": { name: "乔治亚州", timezone: "America/New_York" },
+                    "707": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "708": { name: "伊利诺伊州", timezone: "America/Chicago" },
+                    "709": { name: "纽芬兰和拉布拉多省(加拿大)", timezone: "America/St_Johns" },
+                    "712": { name: "爱荷华州", timezone: "America/Chicago" },
+                    "713": { name: "德克萨斯州(休斯顿)", timezone: "America/Chicago" },
+                    "714": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "715": { name: "威斯康星州", timezone: "America/Chicago" },
+                    "716": { name: "纽约州(布法罗)", timezone: "America/New_York" },
+                    "717": { name: "宾夕法尼亚州", timezone: "America/New_York" },
+                    "718": { name: "纽约州(纽约市)", timezone: "America/New_York" },
+                    "719": { name: "科罗拉多州", timezone: "America/Denver" },
+                    "720": { name: "科罗拉多州(丹佛)", timezone: "America/Denver" },
+                    "724": { name: "宾夕法尼亚州", timezone: "America/New_York" },
+                    "725": { name: "内华达州(拉斯维加斯)", timezone: "America/Los_Angeles" },
+                    "727": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "731": { name: "田纳西州", timezone: "America/Chicago" },
+                    "732": { name: "新泽西州", timezone: "America/New_York" },
+                    "734": { name: "密歇根州", timezone: "America/Detroit" },
+                    "740": { name: "俄亥俄州", timezone: "America/New_York" },
+                    "747": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "754": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "757": { name: "弗吉尼亚州", timezone: "America/New_York" },
+                    "758": { name: "圣卢西亚", timezone: "America/St_Lucia" },
+                    "760": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "762": { name: "乔治亚州", timezone: "America/New_York" },
+                    "763": { name: "明尼苏达州", timezone: "America/Chicago" },
+                    "765": { name: "印第安纳州", timezone: "America/Chicago" },
+                    "769": { name: "密西西比州", timezone: "America/Chicago" },
+                    "770": { name: "乔治亚州(亚特兰大)", timezone: "America/New_York" },
+                    "772": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "773": { name: "伊利诺伊州(芝加哥)", timezone: "America/Chicago" },
+                    "774": { name: "马萨诸塞州", timezone: "America/New_York" },
+                    "775": { name: "内华达州", timezone: "America/Los_Angeles" },
+                    "778": { name: "不列颠哥伦比亚省(加拿大)", timezone: "America/Vancouver" },
+                    "779": { name: "伊利诺伊州", timezone: "America/Chicago" },
+                    "780": { name: "阿尔伯塔省(加拿大)", timezone: "America/Edmonton" },
+                    "781": { name: "马萨诸塞州", timezone: "America/New_York" },
+                    "784": { name: "圣文森特和格林纳丁斯", timezone: "America/St_Vincent" },
+                    "785": { name: "堪萨斯州", timezone: "America/Chicago" },
+                    "786": { name: "佛罗里达州(迈阿密)", timezone: "America/New_York" },
+                    "787": { name: "波多黎各", timezone: "America/Puerto_Rico" },
+                    "801": { name: "犹他州", timezone: "America/Denver" },
+                    "802": { name: "佛蒙特州", timezone: "America/New_York" },
+                    "803": { name: "南卡罗来纳州", timezone: "America/New_York" },
+                    "804": { name: "弗吉尼亚州", timezone: "America/New_York" },
+                    "805": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "806": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "807": { name: "安大略省(加拿大)", timezone: "America/Toronto" },
+                    "808": { name: "夏威夷州", timezone: "Pacific/Honolulu" },
+                    "809": { name: "多米尼加共和国", timezone: "America/Santo_Domingo" },
+                    "810": { name: "密歇根州", timezone: "America/Detroit" },
+                    "812": { name: "印第安纳州", timezone: "America/Chicago" },
+                    "813": { name: "佛罗里达州(坦帕)", timezone: "America/New_York" },
+                    "814": { name: "宾夕法尼亚州", timezone: "America/New_York" },
+                    "815": { name: "伊利诺伊州", timezone: "America/Chicago" },
+                    "816": { name: "密苏里州(堪萨斯城)", timezone: "America/Chicago" },
+                    "817": { name: "德克萨斯州(沃斯堡)", timezone: "America/Chicago" },
+                    "818": { name: "加利福尼亚州(洛杉矶)", timezone: "America/Los_Angeles" },
+                    "819": { name: "魁北克省(加拿大)", timezone: "America/Montreal" },
+                    "828": { name: "北卡罗来纳州", timezone: "America/New_York" },
+                    "829": { name: "多米尼加共和国", timezone: "America/Santo_Domingo" },
+                    "830": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "831": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "832": { name: "德克萨斯州(休斯顿)", timezone: "America/Chicago" },
+                    "843": { name: "南卡罗来纳州", timezone: "America/New_York" },
+                    "845": { name: "纽约州", timezone: "America/New_York" },
+                    "847": { name: "伊利诺伊州", timezone: "America/Chicago" },
+                    "848": { name: "新泽西州", timezone: "America/New_York" },
+                    "850": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "856": { name: "新泽西州", timezone: "America/New_York" },
+                    "857": { name: "马萨诸塞州(波士顿)", timezone: "America/New_York" },
+                    "858": { name: "加利福尼亚州(圣地亚哥)", timezone: "America/Los_Angeles" },
+                    "859": { name: "肯塔基州", timezone: "America/New_York" },
+                    "860": { name: "康涅狄格州", timezone: "America/New_York" },
+                    "862": { name: "新泽西州", timezone: "America/New_York" },
+                    "863": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "864": { name: "南卡罗来纳州", timezone: "America/New_York" },
+                    "865": { name: "田纳西州(诺克斯维尔)", timezone: "America/New_York" },
+                    "867": { name: "育空地区/西北地区/努纳武特地区(加拿大)", timezone: "America/Yellowknife" },
+                    "868": { name: "特立尼达和多巴哥", timezone: "America/Port_of_Spain" },
+                    "869": { name: "圣基茨和尼维斯", timezone: "America/St_Kitts" },
+                    "870": { name: "阿肯色州", timezone: "America/Chicago" },
+                    "872": { name: "伊利诺伊州(芝加哥)", timezone: "America/Chicago" },
+                    "876": { name: "牙买加", timezone: "America/Jamaica" },
+                    "901": { name: "田纳西州(孟菲斯)", timezone: "America/Chicago" },
+                    "902": { name: "新斯科舍省/爱德华王子岛省(加拿大)", timezone: "America/Halifax" },
+                    "903": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "904": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "905": { name: "安大略省(加拿大)", timezone: "America/Toronto" },
+                    "906": { name: "密歇根州", timezone: "America/Detroit" },
+                    "907": { name: "阿拉斯加州", timezone: "America/Anchorage" },
+                    "908": { name: "新泽西州", timezone: "America/New_York" },
+                    "909": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "910": { name: "北卡罗来纳州", timezone: "America/New_York" },
+                    "912": { name: "乔治亚州", timezone: "America/New_York" },
+                    "913": { name: "堪萨斯州", timezone: "America/Chicago" },
+                    "914": { name: "纽约州", timezone: "America/New_York" },
+                    "915": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "916": { name: "加利福尼亚州(萨克拉门托)", timezone: "America/Los_Angeles" },
+                    "917": { name: "纽约州(纽约市)", timezone: "America/New_York" },
+                    "918": { name: "俄克拉荷马州", timezone: "America/Chicago" },
+                    "919": { name: "北卡罗来纳州", timezone: "America/New_York" },
+                    "920": { name: "威斯康星州", timezone: "America/Chicago" },
+                    "925": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "928": { name: "亚利桑那州", timezone: "America/Phoenix" },
+                    "929": { name: "纽约州", timezone: "America/New_York" },
+                    "931": { name: "田纳西州", timezone: "America/Chicago" },
+                    "936": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "937": { name: "俄亥俄州", timezone: "America/New_York" },
+                    "938": { name: "阿拉巴马州", timezone: "America/Chicago" },
+                    "939": { name: "波多黎各", timezone: "America/Puerto_Rico" },
+                    "940": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "941": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "947": { name: "密歇根州", timezone: "America/Detroit" },
+                    "949": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "951": { name: "加利福尼亚州", timezone: "America/Los_Angeles" },
+                    "952": { name: "明尼苏达州", timezone: "America/Chicago" },
+                    "954": { name: "佛罗里达州", timezone: "America/New_York" },
+                    "956": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "970": { name: "科罗拉多州", timezone: "America/Denver" },
+                    "971": { name: "俄勒冈州(波特兰)", timezone: "America/Los_Angeles" },
+                    "972": { name: "德克萨斯州(达拉斯)", timezone: "America/Chicago" },
+                    "973": { name: "新泽西州", timezone: "America/New_York" },
+                    "978": { name: "马萨诸塞州", timezone: "America/New_York" },
+                    "979": { name: "德克萨斯州", timezone: "America/Chicago" },
+                    "980": { name: "北卡罗来纳州", timezone: "America/New_York" },
+                    "985": { name: "路易斯安那州", timezone: "America/Chicago" },
+                    "989": { name: "密歇根州", timezone: "America/Detroit" }
+                }
+            }
+        };
+
+        function classifyNumbers() {
+            const input = document.getElementById('phoneNumbers').value.trim();
+            if (!input) {
+                alert('请输入至少一个电话号码');
+                return;
+            }
+
+            const numbers = input.split('\n').filter(num => num.trim());
+            const classified = {};
+
+            numbers.forEach(number => {
+                // 移除所有非数字字符
+                const cleanNumber = number.replace(/\D/g, '');
+
+                if (!cleanNumber) return;
+
+                // 提取国家代码
+                let countryCode = '';
+                let remainingNumber = '';
+
+                // 检查已知的国家代码（按长度从长到短排序）
+                const countryCodes = Object.keys(countryData).sort((a, b) => b.length - a.length);
+
+                for (const code of countryCodes) {
+                    if (cleanNumber.startsWith(code)) {
+                        countryCode = code;
+                        remainingNumber = cleanNumber.slice(code.length);
+                        break;
+                    }
+                }
+
+                if (!countryCode) {
+                    // 如果没有匹配的国家代码，使用第一个数字作为国家代码
+                    countryCode = cleanNumber[0] || '';
+                    remainingNumber = cleanNumber.slice(countryCode.length);
+                }
+
+                // 获取国家信息
+                const countryInfo = countryData[countryCode] || {
+                    name: `未知国家 (${countryCode})`,
+                    timezone: "UTC",
+                    areaCodes: {}
+                };
+
+                // 提取区号
+                let areaCode = '';
+                let areaName = '未知地区';
+                let areaTimezone = countryInfo.timezone;
+
+                // 检查已知的区号（按长度从长到短排序）
+                const areaCodes = Object.keys(countryInfo.areaCodes || {}).sort((a, b) => b.length - a.length);
+
+                for (const code of areaCodes) {
+                    if (remainingNumber.startsWith(code)) {
+                        areaCode = code;
+                        areaName = countryInfo.areaCodes[code].name;
+                        areaTimezone = countryInfo.areaCodes[code].timezone;
+                        remainingNumber = remainingNumber.slice(code.length);
+                        break;
+                    }
+                }
+
+                // 如果没有匹配的区号，尝试使用前3位或前2位作为区号
+                if (!areaCode && remainingNumber.length >= 3) {
+                    areaCode = remainingNumber.substring(0, 3);
+                } else if (!areaCode && remainingNumber.length >= 2) {
+                    areaCode = remainingNumber.substring(0, 2);
+                }
+
+                // 构建分类结构
+                if (!classified[countryInfo.name]) {
+                    classified[countryInfo.name] = {};
+                }
+
+                const areaKey = areaCode || 'unknown';
+
+                if (!classified[countryInfo.name][areaKey]) {
+                    classified[countryInfo.name][areaKey] = {
+                        name: areaName,
+                        timezone: areaTimezone,
+                        numbers: []
+                    };
+                }
+
+                classified[countryInfo.name][areaKey].numbers.push(cleanNumber);
+            });
+
+            // 显示结果
+            displayResults(classified);
+        }
+
+        function displayResults(classified) {
+            const resultDiv = document.getElementById('result');
+            const countryResultsDiv = document.getElementById('countryResults');
+
+            resultDiv.style.display = 'block';
+            countryResultsDiv.innerHTML = '';
+
+            if (Object.keys(classified).length === 0) {
+                countryResultsDiv.innerHTML = '<p>没有找到可分类的号码。</p>';
+                return;
+            }
+
+            // 存储所有区号信息用于导出
+            window.sortedAreas = [];
+
+            for (const country in classified) {
+                const countryDiv = document.createElement('div');
+                countryDiv.className = 'country';
+
+                const countryNameDiv = document.createElement('div');
+                countryNameDiv.className = 'country-name';
+                countryNameDiv.textContent = country;
+                countryDiv.appendChild(countryNameDiv);
+
+                // 获取所有区号并按时间排序
+                const areas = Object.entries(classified[country]).map(([areaCode, areaInfo]) => ({
+                    areaCode,
+                    ...areaInfo
+                }));
+
+                // 按当地时间排序（从晚到早）
+                areas.sort((a, b) => {
+                    const timeA = new Date().toLocaleString('zh-CN', { timeZone: a.timezone });
+                    const timeB = new Date().toLocaleString('zh-CN', { timeZone: b.timezone });
+                    return timeB.localeCompare(timeA);
+                });
+
+                // 保存排序后的区号信息
+                window.sortedAreas.push(...areas);
+
+                // 显示排序后的区号
+                for (const area of areas) {
+                    const areaDiv = document.createElement('div');
+                    areaDiv.className = 'area-code';
+
+                    const areaHeaderDiv = document.createElement('div');
+                    areaHeaderDiv.className = 'area-header';
+
+                    const areaNameDiv = document.createElement('div');
+                    areaNameDiv.className = 'area-name';
+                    areaNameDiv.textContent = area.areaCode !== 'unknown'
+                        ? `区号 ${area.areaCode} - ${area.name}`
+                        : `${area.name}`;
+                    areaHeaderDiv.appendChild(areaNameDiv);
+
+                    const areaTimeDiv = document.createElement('div');
+                    areaTimeDiv.className = 'area-time';
+                    const timeId = `time-${country}-${area.areaCode}`.replace(/\s+/g, '-');
+                    areaTimeDiv.id = timeId;
+                    areaTimeDiv.textContent = '正在加载时间...';
+                    areaHeaderDiv.appendChild(areaTimeDiv);
+
+                    areaDiv.appendChild(areaHeaderDiv);
+
+                    const numbersDiv = document.createElement('div');
+                    numbersDiv.className = 'numbers';
+
+                    area.numbers.forEach(number => {
+                        const numberSpan = document.createElement('span');
+                        numberSpan.className = 'number';
+                        numberSpan.textContent = number;
+                        numbersDiv.appendChild(numberSpan);
+                    });
+
+                    areaDiv.appendChild(numbersDiv);
+                    countryDiv.appendChild(areaDiv);
+
+                    // 启动时间更新
+                    setTimeout(() => {
+                        updateLocalTime(area.timezone, timeId);
+                    }, 100);
+                }
+
+                countryResultsDiv.appendChild(countryDiv);
+            }
+        }
+
+        function updateLocalTime(timezone, elementId) {
+            const timeElement = document.getElementById(elementId);
+            if (!timeElement) return;
+
+            function showTime() {
+                const now = new Date();
+                try {
+                    const timeString = now.toLocaleString('zh-CN', {
+                        timeZone: timezone,
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
+                    timeElement.textContent = timeString;
+                } catch (e) {
+                    console.error('时间显示错误:', e);
+                    timeElement.textContent = '时间显示错误';
+                }
+            }
+
+            // 立即显示时间
+            showTime();
+            // 每秒更新一次
+            setInterval(showTime, 1000);
+        }
+
+        // 添加导出功能
+        function exportNumbers() {
+            if (!window.sortedAreas || window.sortedAreas.length === 0) {
+                alert('请先分类号码！');
+                return;
+            }
+
+            // 收集所有号码
+            const allNumbers = window.sortedAreas.reduce((acc, area) => {
+                return acc.concat(area.numbers);
+            }, []);
+
+            // 创建文本内容
+            const content = allNumbers.join('\n');
+
+            // 创建Blob对象
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'WhatsApp号码_' + new Date().toLocaleString('zh-CN').replace(/[/:]/g, '-') + '.txt';
+
+            // 触发下载
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
