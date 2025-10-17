@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp群组信息获取工具</title>
+    <style>
+        :root {
+            --whatsapp-green: #25D366;
+            --whatsapp-dark-green: #128C7E;
+            --error-red: #FF3333;
+            --border-color: #ddd;
+            --button-blue: #4a6baf;
+            --button-dark-blue: #3a5a9f;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: var(--whatsapp-green);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .input-section {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            resize: vertical;
+            font-size: 14px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+            flex: 1;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            background-color: #aaa !important;
+            cursor: not-allowed;
+        }
+        #fetchBtn {
+            background-color: var(--whatsapp-green);
+        }
+        #fetchBtn:hover {
+            background-color: var(--whatsapp-dark-green);
+        }
+        #mergeBtn {
+            background-color: var(--button-blue);
+        }
+        #mergeBtn:hover {
+            background-color: var(--button-dark-blue);
+        }
+        #cleanBtn {
+            background-color: #666;
+        }
+        #cleanBtn:hover {
+            background-color: #555;
+        }
+        #result {
+            grid-column: span 2;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .group-item {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+        .group-item:last-child {
+            border-bottom: none;
+        }
+        .group-name {
+            color: #1E88E5;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        .note {
+            color: #555;
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+        .url {
+            color: #666;
+            font-size: 13px;
+            word-break: break-all;
+            margin-bottom: 5px;
+        }
+        .error {
+            color: var(--error-red);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .status {
+            text-align: center;
+            margin: 15px 0;
+            font-style: italic;
+            color: #666;
+            grid-column: span 2;
+        }
+        .progress-container {
+            grid-column: span 2;
+            margin: 15px 0;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            height: 10px;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            border-radius: 5px;
+            background-color: var(--whatsapp-green);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .separator {
+            color: #999;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>WhatsApp群组信息获取工具</h1>
+
+    <div class="container">
+        <div class="input-section">
+            <div class="input-group">
+                <label for="groupLinks">社群链接 (每行一个链接)</label>
+                <textarea id="groupLinks" placeholder="示例:
+https://chat.whatsapp.com/ABC123
+https://chat.whatsapp.com/DEF456"></textarea>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label for="materialNames">料子名 (每行一个名称)</label>
+                <textarea id="materialNames" placeholder="示例:
+安徒生-661:
+安徒生-662:
+安徒生-663:"></textarea>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="mergeBtn">整合数据</button>
+            <button id="cleanBtn">清理链接</button>
+        </div>
+
+        <div class="button-group">
+            <button id="fetchBtn">获取群组信息</button>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="status" id="status">就绪，等待操作...</div>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputText = document.getElementById('groupLinks');
+            const materialNames = document.getElementById('materialNames');
+            const resultDiv = document.getElementById('result');
+            const statusDiv = document.getElementById('status');
+            const fetchBtn = document.getElementById('fetchBtn');
+            const mergeBtn = document.getElementById('mergeBtn');
+            const cleanBtn = document.getElementById('cleanBtn');
+            const progressBar = document.getElementById('progress');
+
+            // 验证WhatsApp链接格式
+            function isValidWhatsAppUrl(url) {
+                return /^https?:\/\/chat\.whatsapp\.com\/[a-zA-Z0-9_-]{22}$/.test(url.trim());
+            }
+
+            // 清理链接
+            function cleanLinks(text) {
+                return text.split('\n')
+                    .map(line => {
+                        const match = line.match(/https?:\/\/chat\.whatsapp\.com\/[a-zA-Z0-9_-]{22}/);
+                        return match ? match[0] : line.trim();
+                    })
+                    .filter(line => line)
+                    .join('\n');
+            }
+
+            // 显示状态信息
+            function showStatus(message, duration = 2000) {
+                statusDiv.textContent = message;
+                if (duration > 0) {
+                    setTimeout(() => {
+                        if (statusDiv.textContent === message) {
+                            statusDiv.textContent = "就绪";
+                        }
+                    }, duration);
+                }
+            }
+
+            // 自动清理输入内容
+            inputText.addEventListener('blur', function() {
+                const cleaned = cleanLinks(this.value);
+                if (cleaned !== this.value) {
+                    this.value = cleaned;
+                    showStatus("已自动清理链接行");
+                }
+            });
+
+            // 手动清理按钮
+            cleanBtn.addEventListener('click', function() {
+                inputText.value = cleanLinks(inputText.value);
+                showStatus("已清理所有链接行");
+            });
+
+            // 整合数据功能
+            mergeBtn.addEventListener('click', function() {
+                const links = inputText.value.trim().split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line && isValidWhatsAppUrl(line));
+
+                const names = materialNames.value.trim().split('\n')
+                    .map(line => line.trim().replace(/:$/, '-')) // 将结尾的:替换为-
+                    .filter(line => line);
+
+                if (links.length === 0) {
+                    showStatus("没有有效的WhatsApp链接可整合");
+                    return;
+                }
+
+                if (names.length === 0) {
+                    showStatus("没有输入料子名");
+                    return;
+                }
+
+                // 构建整合后的内容
+                let mergedContent = '';
+                const minLength = Math.min(links.length, names.length);
+
+                for (let i = 0; i < minLength; i++) {
+                    mergedContent += `${names[i]}\n${links[i]}\n\n`;
+                }
+
+                // 处理多余的链接
+                if (links.length > names.length) {
+                    for (let i = names.length; i < links.length; i++) {
+                        mergedContent += `${links[i]}\n\n`;
+                    }
+                }
+
+                inputText.value = mergedContent.trim();
+                showStatus(`已整合 ${minLength} 条数据`);
+            });
+
+            // 解析输入内容
+            function parseInput() {
+                const lines = inputText.value.trim().split('\n');
+                const items = [];
+                let currentNote = '';
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) continue;
+
+                    if (isValidWhatsAppUrl(trimmedLine)) {
+                        items.push({
+                            url: trimmedLine,
+                            note: currentNote
+                        });
+                        currentNote = '';
+                    } else {
+                        currentNote = trimmedLine;
+                    }
+                }
+
+                return items;
+            }
+
+            // 获取群组信息
+            async function fetchGroupInfo(url) {
+                try {
+                    const response = await fetch('http://localhost:3000/api/fetch-group', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ url })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `HTTP错误: ${response.status}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    throw error;
+                }
+            }
+
+            // 显示结果
+            function displayResult(item, data, error = null) {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'group-item';
+
+                if (error) {
+                    resultItem.innerHTML = `
+                        <div class="error">❌ ${error.message}</div>
+                        ${item.note ? `<div class="note">${item.note}</div>` : ''}
+                        <div class="url">${item.url}</div>
+                    `;
+                } else {
+                    resultItem.innerHTML = `
+                        <div class="group-name">${data.groupName}</div>
+                        ${item.note ? `<div class="note">${item.note}</div>` : ''}
+                        <div class="url">${item.url}</div>
+                    `;
+                }
+
+                resultDiv.appendChild(resultItem);
+                resultDiv.scrollTop = resultDiv.scrollHeight;
+            }
+
+            // 主处理函数
+            fetchBtn.addEventListener('click', async function() {
+                const items = parseInput();
+                if (items.length === 0) {
+                    showStatus("未检测到有效的WhatsApp群组链接!");
+                    return;
+                }
+
+                // 重置状态
+                fetchBtn.disabled = true;
+                mergeBtn.disabled = true;
+                cleanBtn.disabled = true;
+                resultDiv.innerHTML = '';
+                showStatus(`正在处理 0/${items.length}...`, 0);
+                progressBar.style.width = '0%';
+
+                let successCount = 0;
+                let processedCount = 0;
+
+                // 分批处理 (每次3个)
+                const batchSize = 3;
+                for (let i = 0; i < items.length; i += batchSize) {
+                    const batch = items.slice(i, i + batchSize);
+
+                    // 处理当前批次
+                    for (let j = 0; j < batch.length; j++) {
+                        const item = batch[j];
+                        const currentIndex = i + j + 1;
+
+                        showStatus(`正在处理 ${currentIndex}/${items.length}: ${item.url.substring(0, 30)}...`, 0);
+                        progressBar.style.width = `${(currentIndex/items.length)*100}%`;
+
+                        try {
+                            // 随机延迟防止被封
+                            await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
+
+                            const data = await fetchGroupInfo(item.url);
+                            displayResult(item, data);
+                            successCount++;
+                        } catch (error) {
+                            console.error('获取失败:', error);
+                            displayResult(item, null, error);
+                        }
+
+                        processedCount++;
+                    }
+
+                    // 批次间延迟
+                    if (i + batchSize < items.length) {
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                    }
+                }
+
+                showStatus(`处理完成! 成功 ${successCount}/${items.length}`, 0);
+                fetchBtn.disabled = false;
+                mergeBtn.disabled = false;
+                cleanBtn.disabled = false;
+                progressBar.style.width = '100%';
+            });
+        });
+    </script>
+</body>
+</html>

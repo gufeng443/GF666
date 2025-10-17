@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工具合集 - 一体化页面</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; flex-direction: column; }
+        
+        /* 顶部导航 */
+        .app-header { 
+            background: rgba(255,255,255,0.98); 
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+            padding: 20px 24px;
+            border-bottom: 2px solid #667eea;
+        }
+        .title { 
+            font-size: 28px; 
+            color: #667eea; 
+            font-weight: 700; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle { font-size: 14px; color: #6b7280; margin-top: 8px; }
+
+        /* 搜索和筛选区 */
+        .search-bar {
+            background: white;
+            padding: 12px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .search-input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .filter-btn:hover { background: #f3f4f6; }
+        .filter-btn.active { 
+            background: #667eea; 
+            color: white; 
+            border-color: #667eea; 
+        }
+
+        /* 标签区域 */
+        .tabs { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+            padding: 16px 24px; 
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(10px);
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .tab-section { display: flex; flex-wrap: wrap; gap: 10px; }
+        .tab-section-title { 
+            font-size: 13px; 
+            color: #374151; 
+            font-weight: 700; 
+            margin: 4px 0 8px 2px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tab-section-title .icon { font-size: 16px; }
+        
+        /* 标签样式优化 */
+        .tab { 
+            padding: 12px 16px; 
+            background: white;
+            color: #374151; 
+            border: 2px solid #e5e7eb; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            font-weight: 500;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1); 
+            user-select: none; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            min-height: 42px;
+            white-space: nowrap;
+        }
+        .tab:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.2);
+            border-color: #667eea;
+        }
+        .tab.active { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            border-color: transparent; 
+            box-shadow: 0 4px 16px rgba(102,126,234,.4);
+            transform: translateY(-2px);
+        }
+        .tab.local { background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%); border-color: #bae6fd; }
+        .tab.online { background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%); border-color: #fdba74; }
+        .tab.resource { background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-color: #d8b4fe; }
+        .tab.local:hover { border-color: #0ea5e9; }
+        .tab.online:hover { border-color: #f97316; }
+        .tab.resource:hover { border-color: #a855f7; }
+        .tab.active.local,
+        .tab.active.online,
+        .tab.active.resource { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .badge { 
+            font-size: 10px; 
+            padding: 3px 8px; 
+            border-radius: 999px; 
+            background: rgba(0,0,0,0.05); 
+            color: #374151;
+            font-weight: 600;
+        }
+        .tab.active .badge { background: rgba(255,255,255,.25); color: white; }
+        .info-dot { 
+            width: 20px; 
+            height: 20px; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            border-radius: 999px; 
+            background: rgba(0,0,0,0.08); 
+            color: #374151; 
+            font-weight: 700; 
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+        .info-dot:hover { background: rgba(102,126,234,0.2); }
+        .tab.active .info-dot { background: rgba(255,255,255,.25); color: #ffffff; }
+
+        .content { flex: 1; display: flex; flex-direction: column; }
+        .toolbar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 12px 24px; 
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb; 
+        }
+        .current-label { 
+            font-size: 14px; 
+            color: #374151; 
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .current-label::before {
+            content: '▶';
+            color: #667eea;
+            font-size: 12px;
+        }
+        .actions-right { display: flex; gap: 10px; }
+        .btn { 
+            padding: 8px 16px; 
+            font-size: 13px; 
+            border-radius: 8px; 
+            border: 2px solid #e5e7eb; 
+            background: white; 
+            color: #374151; 
+            cursor: pointer; 
+            transition: all .3s;
+            font-weight: 500;
+        }
+        .btn:hover { 
+            background: #f3f4f6; 
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+        .btn.primary { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff; 
+            border-color: transparent;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.3);
+        }
+        .btn.primary:hover { 
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+            transform: translateY(-2px);
+        }
+        .frame-wrap { 
+            flex: 1; 
+            padding: 16px 24px 24px 24px;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .frame { 
+            width: 100%; 
+            flex: 1;
+            min-height: 500px;
+            border: none; 
+            background: white; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .footer { 
+            text-align: center; 
+            padding: 12px 24px; 
+            font-size: 12px; 
+            color: rgba(255,255,255,0.8); 
+            background: rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Modal */
+        .modal-mask { 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,.6); 
+            backdrop-filter: blur(4px);
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 16px;
+            z-index: 1000;
+        }
+        .modal { 
+            width: min(900px, 96vw); 
+            max-height: 90vh; 
+            overflow: auto; 
+            background: #fff; 
+            border-radius: 16px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 20px 24px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .modal-title { 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: white; 
+        }
+        .modal-header .btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .modal-header .btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: none;
+        }
+        .modal-body { padding: 20px 24px 24px 24px; }
+        .muted { color: #6b7280; font-size: 14px; line-height: 1.6; }
+        .guide-section { margin-top: 16px; }
+        .guide-section h4 { 
+            font-size: 14px; 
+            color: #667eea; 
+            margin-bottom: 8px; 
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .guide-section h4::before {
+            content: '●';
+            font-size: 10px;
+        }
+        .guide-section ol { 
+            padding-left: 20px; 
+            color: #374151; 
+            font-size: 14px; 
+            line-height: 1.8; 
+        }
+        .guide-section ul { 
+            padding-left: 20px; 
+            color: #374151; 
+            font-size: 14px; 
+            line-height: 1.8; 
+        }
+        .guide-section li { margin-bottom: 6px; }
+        .kbd { 
+            padding: 3px 8px; 
+            border: 2px solid #e5e7eb; 
+            border-bottom-width: 3px; 
+            border-radius: 6px; 
+            background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; 
+            font-size: 12px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        /* 滚动条美化 */
+        .tabs::-webkit-scrollbar,
+        .modal::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .tabs::-webkit-scrollbar-track,
+        .modal::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .tabs::-webkit-scrollbar-thumb,
+        .modal::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+        .tabs::-webkit-scrollbar-thumb:hover,
+        .modal::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        /* 工具提示 */
+        .quick-tips {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 10px 24px;
+            border-bottom: 1px solid #fbbf24;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: #92400e;
+        }
+        .quick-tips strong {
+            color: #78350f;
+        }
+        .quick-tips .close-tips {
+            margin-left: auto;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .quick-tips .close-tips:hover {
+            background: rgba(0,0,0,0.1);
+        }
+        .quick-tips.hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .app-header { padding: 16px; }
+            .title { font-size: 22px; }
+            .subtitle { font-size: 12px; }
+            .tabs { max-height: 200px; padding: 12px; }
+            .tab { padding: 10px 12px; font-size: 12px; }
+            .search-bar { flex-direction: column; }
+            .filter-btn { padding: 8px 16px; }
+            .toolbar { flex-direction: column; gap: 8px; align-items: flex-start; }
+            .actions-right { width: 100%; justify-content: space-between; }
+            .frame-wrap { padding: 12px; }
+            .frame { min-height: 400px; }
+            .quick-tips { font-size: 12px; padding: 8px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <div class="title">🛠️ 工具合集</div>
+        <div class="subtitle">在一个页面中快速切换并使用各工具 · 智能搜索 · 分类筛选 · 快捷导航</div>
+    </div>
+
+    <div class="quick-tips" id="quickTips">
+        <span>💡</span>
+        <span><strong>快速提示：</strong>点击工具标签上的 <span style="background: rgba(102,126,234,0.1); padding: 2px 6px; border-radius: 4px; font-weight: 600;">i</span> 按钮查看详细使用指南 · 使用 <span style="background: rgba(102,126,234,0.1); padding: 2px 6px; border-radius: 4px; font-weight: 600;">←/→</span> 键切换工具</span>
+        <span class="close-tips" id="closeTips" title="关闭提示">✕</span>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="🔍 搜索工具名称或功能（支持实时搜索）..." />
+        <button class="filter-btn active" data-filter="all">全部 📋</button>
+        <button class="filter-btn" data-filter="本地">本地 💻</button>
+        <button class="filter-btn" data-filter="在线">在线 🌐</button>
+        <button class="filter-btn" data-filter="资源">资源 📁</button>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div class="content">
+        <div class="toolbar">
+            <div class="current-label" id="currentLabel">—</div>
+            <div class="actions-right">
+                <button class="btn" id="openNew">打开新窗口</button>
+                <button class="btn" id="reload">刷新</button>
+                <button class="btn primary" id="openGuide">使用指南</button>
+            </div>
+        </div>
+        <div class="frame-wrap">
+            <iframe id="toolFrame" class="frame" src="" referrerpolicy="no-referrer"></iframe>
+        </div>
+    </div>
+
+    <div class="footer">© 工具合集</div>
+
+    <!-- Modal: 使用指南 -->
+    <div class="modal-mask" id="guideMask" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal" role="document">
+            <div class="modal-header">
+                <div class="modal-title" id="guideTitle">使用指南</div>
+                <button class="btn" id="closeGuide">关闭</button>
+            </div>
+            <div class="modal-body" id="guideBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // 工具清单：更规范的命名 + 功能点 + 操作步骤
+        // features：用于在指南中展示"主要功能"
+        const tools = [
+            {
+                label: '余料过滤与对照导出',
+                file: '818普群余料导出补充方案.html',
+                type: '本地',
+                icon: '🔍',
+                desc: '对"完整数据"和"需要过滤的数据"进行比对，导出差集与特殊资源集合，带进度与统计面板。',
+                features: [
+                    '支持拖拽/多文件；自动合并全部文件',
+                    '按行去空白、统一换行，性能优化（Set 去重/过滤）',
+                    '导出两类结果：过滤后数据、特殊资源数据',
+                    '结果统计（总文件数、行数、示例预览、处理日志）'
+                ],
+                steps: [
+                    '在"完整数据区域"拖入一批完整数据 TXT 文件',
+                    '在"过滤数据区域"拖入需要排除的 TXT（含"隐私资源/未注册资源"会自动归类）',
+                    '点击"处理数据"，查看统计与日志',
+                    '按需点击"导出过滤后数据"或"导出特殊资源数据"'
+                ]
+            },
+            {
+                label: 'TXT 群名/管理/料子提取',
+                file: 'TXT 文件處理工具.html',
+                type: '本地',
+                icon: '📝',
+                desc: '对微信群/QQ群导出的 TXT 文本进行结构化解析，分别提取群名称、管理员、料子三类数据并生成下载。',
+                features: [
+                    '拖拽单文件，自动读取并解析',
+                    '可分别下载"群名稱.txt / 管理.txt / 料子.txt"',
+                    '界面简洁，状态提示清晰'
+                ],
+                steps: [
+                    '将 TXT 文件拖入页面中央区域',
+                    '等待解析完成后，页面生成 3 个下载按钮',
+                    '点击对应按钮即可分别下载结果'
+                ]
+            },
+            {
+                label: 'WhatsApp 添加统计（单文件）',
+                file: 'WhatsApp.html',
+                type: '本地',
+                icon: '💬',
+                desc: '对单份 WhatsApp 聊天记录进行"添加成员"统计，展示总次数/唯一号码/Top 添加者，并可导出 CSV。',
+                features: [
+                    '手动粘贴或上传 TXT 聊天记录',
+                    '正则解析"+区号 号码 添加了…"格式',
+                    '表格支持排序；结果可导出 CSV',
+                    '进度条与消息通知'
+                ],
+                steps: [
+                    '粘贴聊天记录或上传 TXT 文件',
+                    '点击"分析数据"并等待进度完成',
+                    '在"添加成员统计"表查看/排序',
+                    '如需留存，点击"导出统计结果"'
+                ]
+            },
+            {
+                label: 'WhatsApp 添加统计（批量）',
+                file: 'WhatsApp群组成员添加分析工具.html',
+                type: '本地',
+                icon: '💬',
+                desc: '同时支持安卓与 iOS 导出的群记录，多文件批量导入，亦可整合多份 CSV 统计。',
+                features: [
+                    'TXT 批量导入，去除不可见控制符并鲁棒解析',
+                    'CSV 批量整合添加次数并汇总',
+                    '进度与每文件状态标记，统计面板与可排序表格',
+                    '导出汇总 CSV'
+                ],
+                steps: [
+                    '在"聊天记录分析"中拖入多份 TXT（或点击选择）',
+                    '如需整合既有统计，切换到"CSV 数据整合"并导入 CSV',
+                    '点击对应按钮执行分析/整合，查看统计结果',
+                    '按需导出汇总 CSV'
+                ]
+            },
+            {
+                label: 'WhatsApp 群组链接清理',
+                file: '链接清理.html',
+                type: '本地',
+                icon: '🔗',
+                desc: 'WhatsApp群组信息获取工具，支持链接清理、整合数据、批量获取群组名称等功能。',
+                features: [
+                    '自动清理和验证WhatsApp群组链接格式',
+                    '整合社群链接和料子名称',
+                    '批量获取群组信息（需后端服务支持）',
+                    '进度显示与错误处理'
+                ],
+                steps: [
+                    '在"社群链接"区域粘贴WhatsApp群组链接',
+                    '在"料子名"区域输入对应名称',
+                    '点击"整合数据"自动匹配链接和名称',
+                    '可选：点击"获取群组信息"批量获取群名'
+                ]
+            },
+            {
+                label: '号码过滤器',
+                file: '协议号号码过滤.html',
+                type: '本地',
+                icon: '🎯',
+                desc: '导入一份原始文本，输入需屏蔽的号码（逐行），输出过滤后文本与被过滤文本。',
+                features: [
+                    '拖拽/点击上传 TXT/CSV/LOG',
+                    '支持在文本框中粘贴多个关键号码进行过滤',
+                    '生成两份结果并可分别下载',
+                    '统计原始/过滤后/被过滤行数'
+                ],
+                steps: [
+                    '上传原始数据文件',
+                    '在"需要过滤的数据"中粘贴每行一个的号码关键字',
+                    '点击"执行过滤"，查看统计与结果',
+                    '点击按钮分别下载两份结果'
+                ]
+            },
+            {
+                label: 'TXT 过滤 + 号码提取',
+                file: '协议号过滤+号码导出.HTML',
+                type: '本地',
+                icon: '📲',
+                desc: '对 TXT 每行进行首段号码提取，并按"91 开头/其他"分流，支持分别下载三类结果。',
+                features: [
+                    '提取每行第一个逗号前的号码',
+                    '分类统计：以 91 开头 / 其他 / 号码清单',
+                    '预览前 10 行，错误提示友好',
+                    '三类下载：91、其他、号码'
+                ],
+                steps: [
+                    '上传 TXT 文件',
+                    '等待解析并查看统计与预览',
+                    '根据需要下载各类结果文件'
+                ]
+            },
+            {
+                label: 'TXT 多文件合并与分包',
+                file: '多包合并与动态分包.html',
+                type: '本地',
+                icon: '📦',
+                desc: '合并多份 TXT 并自动去重；按自定义的多档行数顺序进行分包，剩余行数自动生成最后一包。',
+                features: [
+                    '多文件拖拽导入与文件列表',
+                    '合并去重与数量统计（总行/去重/重复/包数）',
+                    '分包计划预览与一键下载每个包',
+                    '重置与状态提示'
+                ],
+                steps: [
+                    '拖入多份 TXT 文件',
+                    '在输入框填写多个分包行数（如：100,110,150）',
+                    '点击"执行分包"，查看计划与结果',
+                    '点击分包卡片下载对应 TXT'
+                ]
+            },
+            {
+                label: '拉群人数统计报表',
+                file: '工单统计.html',
+                type: '本地',
+                icon: '📊',
+                desc: '对拉群工单数据进行统计分析，按日期分组显示人数和收入，支持导出Excel报表。',
+                features: [
+                    '支持拖拽TXT文件或粘贴数据',
+                    '按日期自动分组统计',
+                    '计算总人数和总收入（人数 × 0.05）',
+                    '颜色区分不同日期，可显示/隐藏详细信息',
+                    '导出Excel报表'
+                ],
+                steps: [
+                    '拖拽TXT文件或在文本框粘贴工单数据',
+                    '点击"处理数据"进行统计分析',
+                    '查看按日期分组的统计结果',
+                    '可选：点击"导出为Excel"保存报表'
+                ]
+            },
+            // 线上工具（GitHub Pages）
+            { label: 'WhatsApp 添加统计', url: 'https://gufeng443.github.io/GF666/WhatsApp.html', type: '在线', icon: '🌐', desc: '在线版添加统计页面，与本地版功能相近，便于快速访问。', features: [ '网页即用，无需下载', '导入 TXT 并导出 CSV' ], steps: [ '点击打开网页', '按页面提示导入并统计' ] },
+            { label: 'LJFP 工具', url: 'https://gufeng443.github.io/GF666/LJFP.html', type: '在线', icon: '🔧', desc: '在线工具 LJFP。', features: [ '网页即用' ], steps: [ '打开网页并按提示操作' ] },
+            { label: '整组料子分包 🔒', url: 'https://gufeng443.github.io/GF666/FB.html', type: '在线', icon: '📦', desc: '整组料子分包（受密码保护：2233）。', features: [ '输入口令后使用' ], steps: [ '打开网页输入密码 2233', '根据页面提示完成分包导出' ] },
+            { label: '协议号分号段 🔒', url: 'https://gufeng443.github.io/GF666/FHD.html', type: '在线', icon: '📞', desc: '按号段打包协议号（受密码保护：955）。', features: [ '输入口令后选择号段' ], steps: [ '打开网页输入密码 955', '选择号段并导出' ] },
+            { label: 'VCF 转换工具', url: 'https://gufeng443.github.io/GF666/VCF.html', type: '在线', icon: '👤', desc: '将号码转换为 VCF 联系人格式。', features: [ '导入号码', '设置联系人字段', '导出 VCF' ], steps: [ '打开网页', '导入并导出' ] },
+            { label: '通用工具1', url: 'https://gufeng443.github.io/GF666/1.html', type: '在线', icon: '⚙️', desc: '在线工具 1。', features: [ '网页即用' ], steps: [ '打开网页使用' ] },
+            { label: '美国时间查询', url: 'https://gufeng443.github.io/GF666/美国时间.html', type: '在线', icon: '🕐', desc: '查看美国当前时间。', features: [ '多时区显示（由网页实现）' ], steps: [ '打开网页查看' ] },
+            { label: 'mm.txt 资源', url: 'https://gufeng443.github.io/GF666/mm.txt', type: '资源', icon: '📄', desc: '纯文本资源文件。', features: [ '可在线预览或下载' ], steps: [ '点击打开或另存为' ] }
+        ];
+
+        const tabsEl = document.getElementById('tabs');
+        const frameEl = document.getElementById('toolFrame');
+        const currentLabelEl = document.getElementById('currentLabel');
+        const openNewBtn = document.getElementById('openNew');
+        const reloadBtn = document.getElementById('reload');
+        const openGuideBtn = document.getElementById('openGuide');
+        const guideMask = document.getElementById('guideMask');
+        const guideBody = document.getElementById('guideBody');
+        const guideTitle = document.getElementById('guideTitle');
+        const closeGuideBtn = document.getElementById('closeGuide');
+        const searchInput = document.getElementById('searchInput');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const quickTips = document.getElementById('quickTips');
+        const closeTipsBtn = document.getElementById('closeTips');
+
+        let currentIndex = 0;
+        let currentFilter = 'all';
+        let searchQuery = '';
+        
+        // 关闭快速提示
+        if (closeTipsBtn) {
+            closeTipsBtn.addEventListener('click', () => {
+                quickTips.classList.add('hidden');
+                localStorage.setItem('hideTips', 'true');
+            });
+        }
+        
+        // 检查是否已隐藏提示
+        if (localStorage.getItem('hideTips') === 'true') {
+            quickTips.classList.add('hidden');
+        }
+
+        function renderGuide(index) {
+            const t = tools[index];
+            guideTitle.textContent = `${t.label} · 使用指南`;
+            const lines = [];
+            lines.push(`<div class=\"muted\">类型：${t.type}${t.file ? ` · 本地文件：${t.file}` : t.url ? ` · 链接：${t.url}` : ''}</div>`);
+            if (t.desc) {
+                lines.push(`<div class=\"guide-section\"><h4>功能说明</h4><div class=\"muted\">${t.desc}</div></div>`);
+            }
+            if (Array.isArray(t.features) && t.features.length) {
+                const featuresHtml = t.features.map(f => `<li>${f}</li>`).join('');
+                lines.push(`<div class=\"guide-section\"><h4>主要功能</h4><ul>${featuresHtml}</ul></div>`);
+            }
+            if (Array.isArray(t.steps) && t.steps.length) {
+                const stepsHtml = t.steps.map(s => `<li>${s}</li>`).join('');
+                lines.push(`<div class=\"guide-section\"><h4>操作步骤</h4><ol>${stepsHtml}</ol></div>`);
+            }
+            lines.push(`<div class=\"guide-section\"><h4>快捷键</h4><ul><li><span class=\"kbd\">←</span>/<span class=\"kbd\">→</span> 切换工具</li><li><span class=\"kbd\">?</span> 或 <span class=\"kbd\">Ctrl</span> + <span class=\"kbd\">/</span> 打开/关闭指南</li></ul></div>`);
+            guideBody.innerHTML = lines.join('');
+        }
+
+        function openGuide(index) {
+            renderGuide(index);
+            guideMask.style.display = 'flex';
+            guideMask.setAttribute('aria-hidden', 'false');
+        }
+        function closeGuide() {
+            guideMask.style.display = 'none';
+            guideMask.setAttribute('aria-hidden', 'true');
+        }
+
+        function setActive(index) {
+            currentIndex = index;
+            const allTabs = Array.from(document.querySelectorAll('.tab[data-index]'));
+            allTabs.forEach((el) => { 
+                const elIndex = parseInt(el.getAttribute('data-index'));
+                if (elIndex === index) el.classList.add('active'); 
+                else el.classList.remove('active'); 
+            });
+            const tool = tools[index];
+            const src = tool.file ? tool.file : tool.url;
+            frameEl.src = src;
+            document.title = `工具合集 - ${tool.label}`;
+            currentLabelEl.textContent = `${tool.icon || ''} ${tool.label}`;
+            openNewBtn.onclick = () => window.open(src, '_blank');
+            reloadBtn.onclick = () => { try { frameEl.contentWindow.location.reload(); } catch (e) { frameEl.src = src; } };
+            openGuideBtn.onclick = () => openGuide(index);
+            
+            // 首次访问时显示使用指南
+            const hasVisited = localStorage.getItem('toolsVisited');
+            if (!hasVisited) {
+                setTimeout(() => openGuide(index), 500);
+                localStorage.setItem('toolsVisited', 'true');
+            }
+        }
+
+        // 过滤工具列表
+        function getFilteredTools() {
+            return tools.filter(tool => {
+                // 类型筛选
+                if (currentFilter !== 'all' && tool.type !== currentFilter) return false;
+                
+                // 搜索筛选
+                if (searchQuery) {
+                    const query = searchQuery.toLowerCase();
+                    const matchLabel = tool.label.toLowerCase().includes(query);
+                    const matchDesc = tool.desc && tool.desc.toLowerCase().includes(query);
+                    const matchFeatures = tool.features && tool.features.some(f => f.toLowerCase().includes(query));
+                    return matchLabel || matchDesc || matchFeatures;
+                }
+                
+                return true;
+            });
+        }
+
+        function initTabs() {
+            tabsEl.innerHTML = '';
+            const filteredTools = getFilteredTools();
+            
+            if (filteredTools.length === 0) {
+                tabsEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280;">未找到匹配的工具</div>';
+                return;
+            }
+
+            // 分组渲染：本地 / 在线 / 资源
+            const groups = [
+                { title: '本地工具', type: '本地', icon: '💻' },
+                { title: '在线工具', type: '在线', icon: '🌐' },
+                { title: '资源文件', type: '资源', icon: '📁' }
+            ];
+
+            let visualIndex = 0;
+
+            groups.forEach(group => {
+                const groupTools = filteredTools.filter(t => t.type === group.type);
+                if (groupTools.length === 0) return;
+
+                const wrapper = document.createElement('div');
+                const title = document.createElement('div');
+                title.className = 'tab-section-title';
+                title.innerHTML = `<span class="icon">${group.icon}</span>${group.title} (${groupTools.length})`;
+                const section = document.createElement('div');
+                section.className = 'tab-section';
+
+                groupTools.forEach((tool) => {
+                    const toolIndex = tools.indexOf(tool);
+                    const tab = document.createElement('div');
+                    tab.className = `tab ${group.type === '本地' ? 'local' : group.type === '在线' ? 'online' : 'resource'}`;
+                    tab.setAttribute('data-index', String(toolIndex));
+                    
+                    // 图标
+                    if (tool.icon) {
+                        const iconSpan = document.createElement('span');
+                        iconSpan.textContent = tool.icon;
+                        iconSpan.style.fontSize = '16px';
+                        tab.appendChild(iconSpan);
+                    }
+                    
+                    // 名称
+                    const name = document.createElement('span');
+                    name.textContent = tool.label;
+                    tab.appendChild(name);
+                    
+                    // 徽章
+                    const badge = document.createElement('span');
+                    badge.className = 'badge';
+                    badge.textContent = tool.type || '工具';
+                    tab.appendChild(badge);
+                    
+                    // 信息按钮
+                    const info = document.createElement('span');
+                    info.className = 'info-dot';
+                    info.textContent = 'i';
+                    info.title = '查看使用指南';
+                    info.addEventListener('click', (e) => { e.stopPropagation(); openGuide(toolIndex); });
+                    tab.appendChild(info);
+                    
+                    tab.title = tool.file ? tool.file : (tool.url || '');
+                    tab.addEventListener('click', () => setActive(toolIndex));
+                    
+                    section.appendChild(tab);
+                    visualIndex++;
+                });
+
+                    wrapper.appendChild(title);
+                    wrapper.appendChild(section);
+                    tabsEl.appendChild(wrapper);
+            });
+
+            // 如果有Hash，尝试激活对应工具
+            const hashIndex = (() => {
+                const h = window.location.hash.replace('#', '').trim();
+                const n = parseInt(h, 10);
+                if (!isNaN(n) && n >= 1 && n <= tools.length) return n - 1;
+                return 0;
+            })();
+            
+            // 检查当前激活的工具是否在过滤结果中
+            if (filteredTools.includes(tools[currentIndex])) {
+                setActive(currentIndex);
+            } else if (filteredTools.length > 0) {
+                setActive(tools.indexOf(filteredTools[0]));
+            }
+        }
+
+        function setupKeyboardNav() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === '?' || (e.ctrlKey && e.key === '/')) {
+                    const visible = guideMask.getAttribute('aria-hidden') === 'false';
+                    if (visible) closeGuide(); else openGuide(currentIndex);
+                    return;
+                }
+                if (e.altKey || e.metaKey || e.shiftKey || e.ctrlKey) return;
+                if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+                const tabs = Array.from(document.querySelectorAll('.tab[data-index]'));
+                const activeIndex = tabs.findIndex(t => t.classList.contains('active'));
+                if (activeIndex < 0) return;
+                let next = e.key === 'ArrowRight' ? activeIndex + 1 : activeIndex - 1;
+                const total = tabs.length;
+                if (next < 0) next = total - 1;
+                if (next >= total) next = 0;
+                setActive(next);
+                window.location.hash = String(next + 1);
+            });
+        }
+
+        guideMask.addEventListener('click', (e) => { if (e.target === guideMask) closeGuide(); });
+        closeGuideBtn.addEventListener('click', closeGuide);
+
+        // 搜索功能
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.trim();
+            initTabs();
+        });
+
+        // 筛选功能
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.getAttribute('data-filter');
+                initTabs();
+            });
+        });
+
+        initTabs();
+        setupKeyboardNav();
+    </script>
+</body>
+</html>
+
+

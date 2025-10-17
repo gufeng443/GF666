@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TXT文件合并与动态分包工具</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .description {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #f8fafc;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover, .upload-area.dragover {
+            background-color: #e3f2fd;
+            border-color: #2980b9;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-name {
+            color: #2c3e50;
+        }
+        
+        .file-size {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 25px 0;
+            align-items: center;
+        }
+        
+        .line-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+        }
+        
+        .stats {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .stats h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-item {
+            background-color: white;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+        
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .result-area {
+            margin-top: 25px;
+            display: none;
+        }
+        
+        .result-title {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .result-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+        }
+        
+        .result-item {
+            background-color: #e8f4fc;
+            border: 1px solid #3498db;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .result-item:hover {
+            background-color: #d4eaf7;
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            display: none;
+        }
+        
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        
+        .status.processing {
+            background-color: #cce7ff;
+            color: #004085;
+            display: block;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .package-plan {
+            background-color: #f0f8ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .package-plan h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .plan-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .plan-item {
+            background-color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #3498db;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 600px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .line-input {
+                width: 100%;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TXT文件合并与动态分包工具</h1>
+        <p class="description">拖拽多个TXT文件到下方区域，设置多个分包行数，点击执行进行合并去重和动态分包处理</p>
+        
+        <div class="upload-area" id="dropArea">
+            <div class="upload-icon">📁</div>
+            <p>拖拽TXT文件到此处或<strong>点击选择文件</strong></p>
+            <input type="file" id="fileInput" class="file-input" multiple accept=".txt">
+        </div>
+        
+        <div class="file-list" id="fileList">
+            <div class="file-item" style="justify-content: center; color: #7f8c8d;">
+                暂无文件
+            </div>
+        </div>
+        
+        <div class="controls">
+            <input type="text" id="lineInput" class="line-input" placeholder="请输入多个分包行数，用逗号分隔，如: 100,110,150">
+            <button id="processBtn" class="btn btn-primary">执行分包</button>
+            <button id="resetBtn" class="btn btn-secondary">重置</button>
+        </div>
+        
+        <div class="package-plan" id="packagePlan">
+            <h3>分包计划</h3>
+            <div class="plan-list" id="planList"></div>
+        </div>
+        
+        <div class="stats" id="stats">
+            <h3>处理统计</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">上传文件数</div>
+                    <div class="stat-value" id="fileCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">合并后总行数</div>
+                    <div class="stat-value" id="totalLines">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">去重后行数</div>
+                    <div class="stat-value" id="uniqueLines">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">重复行数</div>
+                    <div class="stat-value" id="duplicateLines">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">分包数量</div>
+                    <div class="stat-value" id="packageCount">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="result-area" id="resultArea">
+            <h3 class="result-title">分包结果 (点击下载)</h3>
+            <div class="result-list" id="resultList"></div>
+        </div>
+        
+        <div class="instructions">
+            <h3>使用说明：</h3>
+            <ol>
+                <li>拖拽或选择多个TXT文件上传</li>
+                <li>输入多个分包行数，用逗号分隔（如：100,110,150）</li>
+                <li>点击"执行分包"按钮进行处理</li>
+                <li>系统将自动合并所有文件并去除重复行</li>
+                <li>按照输入的分包行数依次分包，剩余数据作为最后一个包</li>
+                <li>处理完成后点击分包文件进行下载</li>
+                <li>点击"重置"按钮可重新开始</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropArea = document.getElementById('dropArea');
+            const fileInput = document.getElementById('fileInput');
+            const fileList = document.getElementById('fileList');
+            const lineInput = document.getElementById('lineInput');
+            const processBtn = document.getElementById('processBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const status = document.getElementById('status');
+            const resultArea = document.getElementById('resultArea');
+            const resultList = document.getElementById('resultList');
+            const stats = document.getElementById('stats');
+            const fileCount = document.getElementById('fileCount');
+            const totalLines = document.getElementById('totalLines');
+            const uniqueLines = document.getElementById('uniqueLines');
+            const duplicateLines = document.getElementById('duplicateLines');
+            const packageCount = document.getElementById('packageCount');
+            const packagePlan = document.getElementById('packagePlan');
+            const planList = document.getElementById('planList');
+            
+            let uploadedFiles = [];
+            
+            // 点击上传区域触发文件选择
+            dropArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // 文件选择事件
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // 拖拽事件
+            dropArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropArea.classList.add('dragover');
+            });
+            
+            dropArea.addEventListener('dragleave', () => {
+                dropArea.classList.remove('dragover');
+            });
+            
+            dropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropArea.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+            
+            // 处理文件选择
+            function handleFileSelect(e) {
+                if (e.target.files.length) {
+                    handleFiles(e.target.files);
+                }
+            }
+            
+            // 处理文件
+            function handleFiles(files) {
+                const txtFiles = Array.from(files).filter(file => 
+                    file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')
+                );
+                
+                if (txtFiles.length === 0) {
+                    showStatus('请选择TXT文件', 'error');
+                    return;
+                }
+                
+                uploadedFiles = uploadedFiles.concat(txtFiles);
+                updateFileList();
+                showStatus(`成功添加 ${txtFiles.length} 个TXT文件`, 'success');
+            }
+            
+            // 更新文件列表显示
+            function updateFileList() {
+                if (uploadedFiles.length === 0) {
+                    fileList.innerHTML = '<div class="file-item" style="justify-content: center; color: #7f8c8d;">暂无文件</div>';
+                    return;
+                }
+                
+                fileList.innerHTML = '';
+                uploadedFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    
+                    const fileName = document.createElement('span');
+                    fileName.className = 'file-name';
+                    fileName.textContent = file.name;
+                    
+                    const fileSize = document.createElement('span');
+                    fileSize.className = 'file-size';
+                    fileSize.textContent = formatFileSize(file.size);
+                    
+                    fileItem.appendChild(fileName);
+                    fileItem.appendChild(fileSize);
+                    fileList.appendChild(fileItem);
+                });
+            }
+            
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // 显示状态信息
+            function showStatus(message, type) {
+                status.textContent = message;
+                status.className = 'status';
+                status.classList.add(type);
+            }
+            
+            // 解析分包行数输入
+            function parsePackageSizes(input) {
+                if (!input.trim()) return [];
+                
+                return input.split(',')
+                    .map(size => parseInt(size.trim()))
+                    .filter(size => !isNaN(size) && size > 0);
+            }
+            
+            // 处理分包
+            processBtn.addEventListener('click', async () => {
+                if (uploadedFiles.length === 0) {
+                    showStatus('请先上传TXT文件', 'error');
+                    return;
+                }
+                
+                const packageSizes = parsePackageSizes(lineInput.value);
+                if (packageSizes.length === 0) {
+                    showStatus('请输入有效的分包行数，用逗号分隔', 'error');
+                    return;
+                }
+                
+                showStatus('正在处理文件，请稍候...', 'processing');
+                processBtn.disabled = true;
+                
+                try {
+                    // 读取所有文件内容
+                    const allLines = [];
+                    let totalLinesCount = 0;
+                    
+                    for (const file of uploadedFiles) {
+                        const text = await readFileAsText(file);
+                        const lines = text.split('\n')
+                            .map(line => line.trim())
+                            .filter(line => line !== '');
+                        
+                        totalLinesCount += lines.length;
+                        allLines.push(...lines);
+                    }
+                    
+                    // 去重处理
+                    const uniqueLinesSet = new Set(allLines);
+                    const uniqueLinesArray = Array.from(uniqueLinesSet);
+                    const duplicateCount = totalLinesCount - uniqueLinesArray.length;
+                    
+                    // 更新统计信息
+                    fileCount.textContent = uploadedFiles.length;
+                    totalLines.textContent = totalLinesCount;
+                    uniqueLines.textContent = uniqueLinesArray.length;
+                    duplicateLines.textContent = duplicateCount;
+                    stats.style.display = 'block';
+                    
+                    // 显示分包计划
+                    displayPackagePlan(packageSizes, uniqueLinesArray.length);
+                    
+                    // 动态分包处理
+                    const packages = createPackages(uniqueLinesArray, packageSizes);
+                    
+                    // 更新分包数量
+                    packageCount.textContent = packages.length;
+                    
+                    // 清空结果区域
+                    resultList.innerHTML = '';
+                    
+                    // 生成分包文件
+                    packages.forEach((pkg, index) => {
+                        const blob = new Blob([pkg.lines.join('\n')], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item';
+                        resultItem.innerHTML = `
+                            <div>分包${index+1}</div>
+                            <div style="font-size: 0.9em; margin-top: 5px;">${pkg.lines.length}行</div>
+                            <div style="font-size: 0.8em; color: #666; margin-top: 3px;">计划: ${pkg.planSize}行</div>
+                        `;
+                        
+                        resultItem.addEventListener('click', () => {
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `分包${index+1}_${pkg.lines.length}行.txt`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                        });
+                        
+                        resultList.appendChild(resultItem);
+                    });
+                    
+                    resultArea.style.display = 'block';
+                    showStatus(`处理完成！共${totalLinesCount}行数据，去重后${uniqueLinesArray.length}行，分成${packages.length}个文件`, 'success');
+                } catch (error) {
+                    console.error('处理文件时出错:', error);
+                    showStatus('处理文件时出错，请重试', 'error');
+                }
+                
+                processBtn.disabled = false;
+            });
+            
+            // 显示分包计划
+            function displayPackagePlan(packageSizes, totalLines) {
+                planList.innerHTML = '';
+                
+                let remainingLines = totalLines;
+                let packageIndex = 0;
+                
+                packageSizes.forEach((size, index) => {
+                    if (remainingLines <= 0) return;
+                    
+                    const actualSize = Math.min(size, remainingLines);
+                    remainingLines -= actualSize;
+                    
+                    const planItem = document.createElement('div');
+                    planItem.className = 'plan-item';
+                    planItem.textContent = `分包${index+1}: ${actualSize}行`;
+                    
+                    planList.appendChild(planItem);
+                    packageIndex = index + 1;
+                });
+                
+                // 添加剩余数据包
+                if (remainingLines > 0) {
+                    const planItem = document.createElement('div');
+                    planItem.className = 'plan-item';
+                    planItem.textContent = `分包${packageIndex+1}: ${remainingLines}行 (剩余数据)`;
+                    
+                    planList.appendChild(planItem);
+                }
+                
+                packagePlan.style.display = 'block';
+            }
+            
+            // 创建分包
+            function createPackages(lines, packageSizes) {
+                const packages = [];
+                let currentIndex = 0;
+                
+                // 按照指定的分包大小创建包
+                packageSizes.forEach(size => {
+                    if (currentIndex >= lines.length) return;
+                    
+                    const endIndex = Math.min(currentIndex + size, lines.length);
+                    const packageLines = lines.slice(currentIndex, endIndex);
+                    
+                    packages.push({
+                        lines: packageLines,
+                        planSize: size
+                    });
+                    
+                    currentIndex = endIndex;
+                });
+                
+                // 处理剩余数据
+                if (currentIndex < lines.length) {
+                    const remainingLines = lines.slice(currentIndex);
+                    packages.push({
+                        lines: remainingLines,
+                        planSize: remainingLines.length
+                    });
+                }
+                
+                return packages;
+            }
+            
+            // 读取文件为文本
+            function readFileAsText(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file, 'UTF-8');
+                });
+            }
+            
+            // 重置功能
+            resetBtn.addEventListener('click', () => {
+                uploadedFiles = [];
+                fileInput.value = '';
+                updateFileList();
+                resultArea.style.display = 'none';
+                stats.style.display = 'none';
+                packagePlan.style.display = 'none';
+                status.className = 'status';
+                lineInput.value = '';
+            });
+        });
+    </script>
+</body>
+</html>

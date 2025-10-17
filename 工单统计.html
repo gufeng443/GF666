@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拉群人数统计报表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .input-area {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+        }
+        #dataInput {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .file-drop-area {
+            border: 2px dashed #aaa;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .file-drop-area.highlight {
+            border-color: #4CAF50;
+            background-color: #f0fff0;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #e6f7ff;
+        }
+        .income-row {
+            font-weight: bold;
+            background-color: #e6ffe6;
+        }
+        .grand-total {
+            font-weight: bold;
+            background-color: #ffe6e6;
+            font-size: 1.1em;
+        }
+        .grand-income {
+            font-weight: bold;
+            background-color: #ffd6d6;
+            font-size: 1.1em;
+        }
+        .date-header {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        .hidden {
+            display: none;
+        }
+        .date-color-0 { background-color: #FFDDFF; }
+        .date-color-1 { background-color: #FFDDDD; }
+        .date-color-2 { background-color: #DDFFDD; }
+        .date-color-3 { background-color: #DDDDFF; }
+        .date-color-4 { background-color: #FFFFDD; }
+        .date-color-5 { background-color: #DDFFFF; }
+        .date-color-6 { background-color: #FFDDAA; }
+        .date-color-7 { background-color: #DDAAFF; }
+        .date-color-8 { background-color: #FFAAAA; }
+        .date-color-9 { background-color: #AAFFAA; }
+        .date-color-10 { background-color: #AAAAFF; }
+        .date-color-11 { background-color: #FFEEAA; }
+        .date-color-12 { background-color: #AAFFEE; }
+        .date-color-13 { background-color: #FFCCAA; }
+        .date-color-14 { background-color: #CCFFCC; }
+        .date-color-15 { background-color: #FFCCDD; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>拉群人数统计报表</h1>
+
+        <div class="input-area">
+            <h3>输入数据：</h3>
+            <textarea id="dataInput" placeholder="请粘贴数据到这里，或者将TXT文件拖放到下方区域"></textarea>
+
+            <div class="file-drop-area" id="fileDropArea">
+                <p>拖放TXT文件到这里，或点击选择文件</p>
+                <input type="file" id="fileInput" accept=".txt" style="display: none;">
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="processBtn">处理数据</button>
+            <button id="exportBtn">导出为Excel</button>
+            <button id="toggleDetailsBtn">显示/隐藏详细信息</button>
+            <button id="calculateTotalBtn">计算总人数和总收入</button>
+        </div>
+
+        <div id="statsSummary"></div>
+
+        <div id="results">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>数据</th>
+                        <th>人数</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- 数据将在这里动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dataInput = document.getElementById('dataInput');
+            const fileDropArea = document.getElementById('fileDropArea');
+            const fileInput = document.getElementById('fileInput');
+            const processBtn = document.getElementById('processBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const toggleDetailsBtn = document.getElementById('toggleDetailsBtn');
+            const calculateTotalBtn = document.getElementById('calculateTotalBtn');
+            const tableBody = document.getElementById('tableBody');
+            const statsSummary = document.getElementById('statsSummary');
+
+            let allData = [];
+            let showDetails = true;
+            let dateColors = {};
+
+            // 文件拖放功能
+            fileDropArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+
+            fileDropArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                fileDropArea.classList.add('highlight');
+            });
+
+            fileDropArea.addEventListener('dragleave', function() {
+                fileDropArea.classList.remove('highlight');
+            });
+
+            fileDropArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                fileDropArea.classList.remove('highlight');
+
+                const file = e.dataTransfer.files[0];
+                if (file && file.type === 'text/plain') {
+                    readFile(file);
+                } else {
+                    alert('请拖放一个TXT文件');
+                }
+            });
+
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    readFile(fileInput.files[0]);
+                }
+            });
+
+            function readFile(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    dataInput.value = e.target.result;
+                };
+                reader.readAsText(file);
+            }
+
+            // 处理数据按钮
+            processBtn.addEventListener('click', function() {
+                processData(dataInput.value);
+            });
+
+            // 导出为Excel
+            exportBtn.addEventListener('click', function() {
+                exportToExcel();
+            });
+
+            // 显示/隐藏详细信息
+            toggleDetailsBtn.addEventListener('click', function() {
+                showDetails = !showDetails;
+                renderTable();
+            });
+
+            // 计算总人数和总收入
+            calculateTotalBtn.addEventListener('click', function() {
+                calculateTotals();
+            });
+
+            // 处理数据函数
+            function processData(text) {
+                allData = [];
+                const lines = text.split('\n');
+                let currentDate = null;
+
+                // 定义颜色列表
+                const colorList = [
+                    'FFDDFF', 'FFDDDD', 'DDFFDD', 'DDDDFF',
+                    'FFFFDD', 'DDFFFF', 'FFDDAA', 'DDAAFF',
+                    'FFAAAA', 'AAFFAA', 'AAAAFF', 'FFEEAA',
+                    'AAFFEE', 'FFCCAA', 'CCFFCC', 'FFCCDD'
+                ];
+
+                // 重置日期颜色映射
+                dateColors = {};
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) continue;
+
+                    // 检查日期分割线
+                    const dateMatch = trimmedLine.match(/(\d{1,2})\.(\d{1,2})-+/);
+                    if (dateMatch) {
+                        currentDate = `${dateMatch[1]}月${dateMatch[2]}日`;
+                        continue;
+                    }
+
+                    // 提取人数 - 只匹配"-数字人"结尾的行
+                    const peopleMatch = trimmedLine.match(/-(\d+)人$/);
+                    if (peopleMatch && currentDate) {
+                        allData.push({
+                            date: currentDate,
+                            data: trimmedLine,
+                            count: parseInt(peopleMatch[1])
+                        });
+                    }
+                }
+
+                // 为每个日期分配颜色
+                const uniqueDates = [...new Set(allData.map(item => item.date))];
+                uniqueDates.forEach((date, index) => {
+                    dateColors[date] = `date-color-${index % 16}`;
+                });
+
+                renderTable();
+                updateStatsSummary();
+            }
+
+            // 渲染表格
+            function renderTable() {
+                tableBody.innerHTML = '';
+
+                if (allData.length === 0) {
+                    return;
+                }
+
+                const groupedData = groupByDate(allData);
+                let grandTotal = 0;
+                let grandIncome = 0;
+
+                for (const [date, items] of Object.entries(groupedData)) {
+                    // 添加日期标题行
+                    const dateHeaderRow = document.createElement('tr');
+                    dateHeaderRow.className = 'date-header';
+                    dateHeaderRow.innerHTML = `<td colspan="3">${date}</td>`;
+                    tableBody.appendChild(dateHeaderRow);
+
+                    let dateTotal = 0;
+
+                    // 添加数据行
+                    if (showDetails) {
+                        for (const item of items) {
+                            const row = document.createElement('tr');
+                            row.className = dateColors[item.date] || '';
+                            row.innerHTML = `
+                                <td>${item.date}</td>
+                                <td>${item.data}</td>
+                                <td>${item.count}</td>
+                            `;
+                            tableBody.appendChild(row);
+                            dateTotal += item.count;
+                        }
+                    }
+
+                    // 添加日期总人数行
+                    const totalRow = document.createElement('tr');
+                    totalRow.className = 'total-row';
+                    totalRow.innerHTML = `
+                        <td colspan="2">${date} 总人数</td>
+                        <td>${dateTotal}</td>
+                    `;
+                    tableBody.appendChild(totalRow);
+
+                    // 添加日期总收入行
+                    const dateIncome = dateTotal * 0.05;
+                    const incomeRow = document.createElement('tr');
+                    incomeRow.className = 'income-row';
+                    incomeRow.innerHTML = `
+                        <td colspan="2">${date} 总收入 (总人数 × 0.05)</td>
+                        <td>${dateIncome.toFixed(2)}</td>
+                    `;
+                    tableBody.appendChild(incomeRow);
+
+                    grandTotal += dateTotal;
+                    grandIncome += dateIncome;
+                }
+
+                // 添加所有日期总人数行
+                if (Object.keys(groupedData).length > 1) {
+                    const grandTotalRow = document.createElement('tr');
+                    grandTotalRow.className = 'grand-total';
+                    grandTotalRow.innerHTML = `
+                        <td colspan="2">所有日期总人数</td>
+                        <td>${grandTotal}</td>
+                    `;
+                    tableBody.appendChild(grandTotalRow);
+
+                    // 添加所有日期总收入行
+                    const grandIncomeRow = document.createElement('tr');
+                    grandIncomeRow.className = 'grand-income';
+                    grandIncomeRow.innerHTML = `
+                        <td colspan="2">所有日期总收入 (总人数 × 0.05)</td>
+                        <td>${grandIncome.toFixed(2)}</td>
+                    `;
+                    tableBody.appendChild(grandIncomeRow);
+                }
+            }
+
+            // 按日期分组数据
+            function groupByDate(data) {
+                return data.reduce((acc, item) => {
+                    if (!acc[item.date]) {
+                        acc[item.date] = [];
+                    }
+                    acc[item.date].push(item);
+                    return acc;
+                }, {});
+            }
+
+            // 更新统计摘要
+            function updateStatsSummary() {
+                const groupedData = groupByDate(allData);
+                let summaryHTML = '<h3>统计摘要：</h3><ul>';
+
+                let grandTotal = 0;
+                let grandIncome = 0;
+
+                for (const [date, items] of Object.entries(groupedData)) {
+                    const total = items.reduce((sum, item) => sum + item.count, 0);
+                    const income = total * 0.05;
+                    summaryHTML += `
+                        <li>${date}:
+                            ${items.length}个群组，总人数 ${total}人，
+                            总收入 ${income.toFixed(2)}
+                        </li>
+                    `;
+                    grandTotal += total;
+                    grandIncome += income;
+                }
+
+                summaryHTML += `
+                    <li><strong>全部总计:
+                        总人数 ${grandTotal}人，
+                        总收入 ${grandIncome.toFixed(2)}
+                    </strong></li>
+                `;
+                summaryHTML += '</ul>';
+
+                statsSummary.innerHTML = summaryHTML;
+            }
+
+            // 计算总人数和总收入
+            function calculateTotals() {
+                const groupedData = groupByDate(allData);
+                let grandTotal = 0;
+                let grandIncome = 0;
+
+                for (const [date, items] of Object.entries(groupedData)) {
+                    const total = items.reduce((sum, item) => sum + item.count, 0);
+                    grandTotal += total;
+                    grandIncome += total * 0.05;
+                }
+
+                alert(`所有日期的统计结果：
+总人数: ${grandTotal}人
+总收入: ${grandIncome.toFixed(2)} (总人数 × 0.05)`);
+            }
+
+            // 导出为Excel
+            function exportToExcel() {
+                if (allData.length === 0) {
+                    alert('没有数据可导出');
+                    return;
+                }
+
+                // 创建一个工作簿
+                const workbook = XLSX.utils.book_new();
+
+                // 准备数据
+                const excelData = allData.map(item => ({
+                    '日期': item.date,
+                    '数据': item.data,
+                    '人数': item.count
+                }));
+
+                // 添加总计行
+                const groupedData = groupByDate(allData);
+                let grandTotal = 0;
+                let grandIncome = 0;
+
+                for (const [date, items] of Object.entries(groupedData)) {
+                    const total = items.reduce((sum, item) => sum + item.count, 0);
+                    const income = total * 0.05;
+                    excelData.push({
+                        '日期': date,
+                        '数据': '总人数',
+                        '人数': total
+                    });
+                    excelData.push({
+                        '日期': date,
+                        '数据': '总收入 (总人数 × 0.05)',
+                        '人数': income.toFixed(2)
+                    });
+                    grandTotal += total;
+                    grandIncome += income;
+                }
+
+                // 添加全部总计
+                excelData.push({
+                    '日期': '所有日期',
+                    '数据': '总人数',
+                    '人数': grandTotal
+                });
+                excelData.push({
+                    '日期': '所有日期',
+                    '数据': '总收入 (总人数 × 0.05)',
+                    '人数': grandIncome.toFixed(2)
+                });
+
+                // 创建工作表
+                const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+                // 将工作表添加到工作簿
+                XLSX.utils.book_append_sheet(workbook, worksheet, "详细数据");
+
+                // 生成当前日期作为文件名
+                const currentDate = new Date();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const fileName = `统计${month}-${day}.xlsx`;
+
+                // 导出Excel文件
+                XLSX.writeFile(workbook, fileName);
+            }
+        });
+    </script>
+    <!-- 引入SheetJS库用于导出Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+</body>
+</html>
